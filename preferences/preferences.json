@@ -1,0 +1,17 @@
+{
+  "theme": "default_dark33.ini",
+  "language": "EN",
+  "log_level": "DEBUG",
+  "calibrated_tick": true,
+  "advanced": {
+    "opencv": {
+      "width": 1920,
+      "height": 1080,
+      "backend": "DSHOW",
+      "cap_prop_fps": 60,
+      "codec": "MJPG",
+      "display_poll_ms": 0,
+      "gpu_rendering": true
+    }
+  }
+}

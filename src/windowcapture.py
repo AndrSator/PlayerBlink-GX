@@ -85,7 +85,7 @@ class WindowCapture:
 
         # convert the raw data into a format opencv can read
         signed_ints_array = data_bitmap.GetBitmapBits(True)
-        img = np.fromstring(signed_ints_array, dtype='uint8')
+        img = np.frombuffer(signed_ints_array, dtype='uint8')
         img.shape = (self.height, self.width, 4)
 
         # free resources

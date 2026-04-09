@@ -1,0 +1,21 @@
+{
+    "name": "Fossil Pokemon",
+    "description": "Config for RNG manipulation at the Mining Museum in Oreburgh City.",
+    "image": "musseum_employee_eye.png",
+    "roi": [
+        350,
+        178,
+        1028,
+        540
+    ],
+    "plus_one_menu_close": true,
+    "final_a_press_delay": 0,
+    "timeline_buffer": 0,
+    "threshold": 0.9,
+    "time_delay": 0.0,
+    "advance_delay": 0,
+    "advance_delay_2": 0,
+    "npc": 5,
+    "pkmn_npc": 0,
+    "timeline_npc": 0
+}

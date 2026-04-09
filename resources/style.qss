@@ -1,0 +1,204 @@
+QWidget {
+    color: {text};
+    background-color: {background};
+    font-family: "Noto Sans";
+    font-size: 14pt;
+}
+
+QPushButton, QComboBox, QSpinBox, QDoubleSpinBox {
+    color: {text};
+    selection-color: {primary};
+    background-color: {surface};
+    selection-background-color: transparent;
+}
+
+/*
+QPushButton[menuIcon="true"] {
+    background-color: red;
+    color: blue;
+}
+
+QPushButton[menuIcon="true"]:hover {
+    background-color: yellow;
+    color: green;
+}
+*/
+
+QPushButton:hover, QPushButton[class="seedValue"]:hover {
+    color: {text};
+    background-color: {surfaceLight};
+}
+
+QPushButton:pressed {
+    color: {text};
+    background-color: {backgroundVariant};
+}
+
+QPushButton[active="true"] {
+    color: {backgroundVariant};
+    background-color: {primary};
+}
+
+QPushButton[active="true"]:hover {
+    color: {backgroundVariant};
+    background-color: {primaryLight};
+}
+
+QPushButton[active="true"]:pressed {
+    color: {backgroundVariant};
+    background-color: {primaryDark};
+}
+
+QPushButton:disabled, QComboBox:disabled {
+    color: {surfaceLight};
+    background-color: {backgroundVariant};
+}
+
+QPushButton[class="seedValue"] {
+    color: {text};
+    background-color: {surface};
+    font-family: "Space Mono";
+    font-size: 9pt;
+    text-align: center;
+    min-height: 15px;
+}
+
+QPushButton#danger {
+    background-color: {error};
+}
+
+QFrame[frameShape="4"] {
+    min-height: 10px;
+    max-height: 10px;
+}
+
+QLabel[timelineState="current"] {
+    color: {primary};
+    background-color: transparent;
+    border-left: 4px solid {primary};
+    font-weight: bold;
+}
+
+QLabel[smallText="true"] {
+    color: {textVariant};
+    font-size: 9pt;
+}
+
+QLabel[timelineState="past"], QLabel[timelineState="predicted"]  {
+    color: {text};
+    background-color: transparent;
+    border-left: none;
+}
+
+QLabel[timelineState="target"] {
+    color: {text};
+    background-color: transparent;
+    border-left: 4px solid {secondary};
+    font-weight: bold;
+}
+
+QLabel[timelineState="pastTarget"] {
+    color: {text};
+    background-color: transparent;
+    border-left: 4px solid {primaryDark};
+}
+
+QScrollBar:vertical {
+    background: {backgroundVariant};
+    width: 14px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: {surface};
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: {surfaceLight};
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QGroupBox {
+    background-color: {surface};
+    border-radius: 10px;
+}
+
+LinearProgress, CircularProgress {
+    qproperty-activeColor: {primary};
+    qproperty-inactiveColor: {surfaceLight};
+    qproperty-labelColor: {text};
+}
+
+QTabWidget::pane, QScrollArea, #scrollAreaWidgetContents {
+    background-color: transparent;
+    border: none;
+}
+
+GalleryItem {
+    background-color: transparent;
+    border: 1px solid {surfaceLight};
+    border-radius: 4px;
+}
+
+GalleryItem[selected="true"] {
+    border: 4px solid {primary};
+    border-radius: 4px;
+}
+
+QTabBar::tab {
+    height: 0;
+    width: 0;
+    margin: 0;
+    padding: 0;
+}
+
+QLabel[title="true"] {
+    color: {text};
+    font-weight: 400;
+    font-size: 16pt;
+    padding-left: 0.25em;
+    padding-bottom: 0.2em;
+}
+
+QRangeSlider {
+    qproperty-barColor: {surfaceLight};
+    height: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+QSlider::groove:horizontal {
+    border: 0px;
+    height: 4px;
+    background: {backgroundVariant};
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    background-color: {surface};
+    border: 0px;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: {surfaceLight};
+}
+
+QSpinBox[error="true"] {
+    color: {error};
+    selection-color: {error};
+}

@@ -1,0 +1,21 @@
+# Commented lines will be ignored. Split sentences by new lines. Case insensitive. Keep UTF-8 encoding
+Project_Xs
+PlayerBlink
+Program Manager
+Visual Studio Code
+Mozilla
+Steam
+Microsoft
+Google
+Chromium
+Opera
+Discord
+foobar2000
+Winamp
+Remote
+Windows Input Experience
+# Language based
+Explorador de archivos
+Configuración
+Experiencia de entrada de Windows
+Remoto
