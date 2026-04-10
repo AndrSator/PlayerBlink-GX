@@ -1,8 +1,8 @@
-# BlinkSeed
+# PlayerBlink GX
 
 ## Overview
 
-Improved version of Player Blink with enhanced UI, error handling, and detection accuracy.
+Improved version of Player Blink with enhanced UI, error handling, and detection accuracy. Some features may be broken or not implemented yet.
 
 > Based on the original Project_Xs by niart120 and Player Blink by lincoln-lm.
 
@@ -10,27 +10,31 @@ Improved version of Player Blink with enhanced UI, error handling, and detection
 
 ## Features
 
-* Real-time blink detection using computer vision
-* RNG state recovery from blink sequences
-* Advance tracking and timeline support
-* Configurable detection settings
-* GUI-based workflow for easier interaction
+* Friendly user interface with a customizable theme.
+* Visual display for A press, countdown start timing (previously known as timeline), target advance along other stuff.
+* Improved accuracy using a calibrated tick instead of an empirical value.
+* Displays predictions of future advances along with their blinks (from player or NPC).
+* Easy control and editing of the ROI and screenshot area using the mouse.
+* Image gallery with simple management for blink tracking.
+* Better error handling and feedback through logs.
 
 ---
 
 ## Requirements
 
-* Python 3.7+
-* Git
-* OpenCV (installed via requirements)
+* Python 3.12+ (May work on previous versions) 
+* OpenCV
+* Pillow
+* Qt (PySide6)
+
 
 ---
 
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/blinkseed.git
-cd blinkseed
+git clone https://github.com/AndrSator/PlayerBlink-GX
+cd PlayerBlink-GX
 pip install -r requirements.txt
 ```
 
@@ -41,52 +45,8 @@ pip install -r requirements.txt
 Run the GUI:
 
 ```bash
-python ./src/player_blink_gui.py
+python "PlayerBlink GX.py"
 ```
-
----
-
-## Main Functions
-
-### Blink Monitoring
-
-Records blink sequences to determine the current RNG state and starts tracking advances.
-
-### Reidentify
-
-Uses a shorter blink sequence to resync your RNG state from known seeds.
-
-### TID/SID Mode
-
-Captures blink data during the intro sequence to calculate trainer IDs.
-
-### Timeline
-
-Provides countdown-based RNG manipulation for events like starters and legendaries.
-
----
-
-## Configuration
-
-The tool allows full customization of detection parameters:
-
-* Detection area (X, Y, Width, Height)
-* Eye recognition threshold
-* NPC and Pokémon blink behavior
-* Timeline delays and advance offsets
-
----
-
-## Notes
-
-* Accuracy depends heavily on proper eye image selection and threshold tuning
-* Different scenarios (starters, legendaries, overworld) may require different configs
-
----
-
-## Disclaimer
-
-This software is provided for educational and research purposes. Use at your own discretion.
 
 ---
 
@@ -94,4 +54,4 @@ This software is provided for educational and research purposes. Use at your own
 
 This project is licensed under the MIT License.
 
-It includes code derived from Project_Xs by niart120.
+It includes code derived from Project_Xs by niart120 and lincoln-lm
