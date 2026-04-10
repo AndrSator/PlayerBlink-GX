@@ -275,8 +275,9 @@ class Controller:
         has_area = self._tracking_area is not None
         idle = not et.is_tracking() and not et.is_preview()
 
-        # Crop eye requires selected resource + tracking area
-        tvw.switch_crop_eye.setEnabled(has_selected and has_area)
+        # Crop eye requires selected resource + tracking area, and the
+        # tracker must be idle (no tracking / reidentify / preview running)
+        tvw.switch_crop_eye.setEnabled(has_selected and has_area and idle)
 
         tracking = et.is_tracking()
         preview = et.is_preview()
@@ -501,6 +502,7 @@ class Controller:
 
         logger.debug(f"[TIMING identify] advances_before_tick={am.advances}")
         am.start_tick_loop(anchor)
+        self._sync_eye_controls()
         # et.start_preview(cvc)
 
     def _handle_identify_tidsid(self, raw_intervals, offset_time):
@@ -573,6 +575,7 @@ class Controller:
         logger.debug(
             f"[TIMING tidsid] advances_before_tick={am.advances}")
         am.start_tick_loop(anchor)
+        self._sync_eye_controls()
 
     def _handle_reidentify(self, intervals, offset_time):
         noisy = self._reident_noisy
@@ -631,6 +634,7 @@ class Controller:
 
         logger.debug(f"[TimingReident] advances_before_tick={am.advances}")
         am.start_tick_loop(anchor)
+        self._sync_eye_controls()
 
         self._check_advance_is_targetable()
         self._update_adv_trgt_eta_label()
@@ -1008,7 +1012,7 @@ class Controller:
         offset_time = time.perf_counter() - 10.0
 
         et.tracking_finished.emit(
-            blinks, intervals, offset_time, time.perf_counter())
+            blinks, intervals, offset_time, None, time.perf_counter())
 
     # endregion
 
