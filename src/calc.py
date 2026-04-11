@@ -3,7 +3,7 @@ import numpy as np
 from bisect import bisect
 from functools import reduce
 
-MAX_23BIT_INT = (1 << 23) - 1
+from src.constants import Constants as Const
 
 
 class Calc:
@@ -173,14 +173,14 @@ class Calc:
 
     def randrange(self, rand, minimum, maximum):
         """Convert a random number into a float range"""
-        rand = (rand & MAX_23BIT_INT) / MAX_23BIT_INT
+        rand = (rand & Const.MAX_23BIT_INT) / Const.MAX_23BIT_INT
         return rand * minimum + (1.0 - rand) * maximum
 
     def reverse_float_range(self, rand_float: float,
                             minimum: float, maximum: float):
         """Convert random float back to original integer"""
         norm_f = (maximum-rand_float)/(maximum-minimum)
-        return int(norm_f * MAX_23BIT_INT) & MAX_23BIT_INT
+        return int(norm_f * Const.MAX_23BIT_INT) & Const.MAX_23BIT_INT
 
     def reverse_states_by_munchlax(self, intervals: list) -> int:
         """Deduce state of Xorshift random number generator

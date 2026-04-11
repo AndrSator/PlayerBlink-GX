@@ -5,8 +5,6 @@ from .icon_utils import setup_icons
 from ..constants import Constants as Const
 from ..ui.cwindow_ui import Ui_CustomWindow
 
-__version__ = "1.0.0"
-
 
 _BORDER_MARGIN = 5
 

@@ -10,7 +10,7 @@ from src.utils import Utils
 from src.xorshift import Xorshift
 from src.constants import Constants as Const
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class AdvanceManager(QObject):
@@ -59,7 +59,7 @@ class AdvanceManager(QObject):
         # Countdown
         self._countdown_active = False
         self._countdown_remaining = 0
-        self._countdown_total = Const.COUNTDOWN_DURATION_SECONDS
+        self._countdown_total = Const.DF_COUNTDOWN_DURATION_TICKS
         self._countdown_auto_start = False
         self._countdown_auto_start_adv = -1
 
@@ -433,7 +433,10 @@ class AdvanceManager(QObject):
 
         # Pokemon NPCs: random interval per entity
         for _ in range(self._npc_pkmn_count):
-            rand = self._rng.rangefloat(3, 12) + 0.285
+            rand = self._rng.rangefloat(
+                Const.PKMN_BLINK_INTERVAL_MIN,
+                Const.PKMN_BLINK_INTERVAL_MAX) + \
+                    Const.PKMN_BLINK_INTERVAL_OFFSET
             heapq.heappush(queue, (anchor + rand, 1))
 
         logger.debug(
@@ -471,10 +474,16 @@ class AdvanceManager(QObject):
                 r = self._rng.next()
                 heapq.heappush(queue, (wait + self._tick_rate, 0))
             else:
-                # Pokemon NPC blink (random interval)
-                r = self._rng.rangefloat(3, 12) + 0.285
-                heapq.heappush(queue, (wait + r, 1))
-
+                # Pokemon NPC blink (random interval).
+                # next() returns the raw 32-bit RNG; derive the float
+                # interval from it the same way rangefloat() does so we
+                # can emit the integer rng AND schedule the next event.
+                r = self._rng.next()
+                temp = (r & Const.MAX_23BIT_INT) / Const.MAX_23BIT_INT
+                interval = temp * Const.PKMN_BLINK_INTERVAL_MIN + \
+                    (1 - temp) * Const.PKMN_BLINK_INTERVAL_MAX + \
+                    Const.PKMN_BLINK_INTERVAL_OFFSET
+                heapq.heappush(queue, (wait + interval, 1))
             predictions = self.predict_next(prediction_count)
             self.advance_tick.emit(
                 self._advances, r, [], predictions)

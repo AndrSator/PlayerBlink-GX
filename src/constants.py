@@ -9,8 +9,12 @@ class Constants:
     # Logic
     DOUBLE_BLINK_MARGIN_SECONDS = 0.7
     FRAME_CORRECTION = 1.018  # Switch game tick period
+    PKMN_BLINK_INTERVAL_MIN = 3
+    PKMN_BLINK_INTERVAL_MAX = 12
+    PKMN_BLINK_INTERVAL_OFFSET = 0.285
     BLINK_BIT_MASK = 0xE  # 0b1110
     BLINK_TYPE_MASK = 0x03  # 0b0011
+    MAX_23BIT_INT = (1 << 23) - 1  # 0x7fffff, used to normalize RNG to float
 
     # Capture
     MSMF_HW_TRANSFORMS = False  # Disable MSMF hardware transforms (latency)
@@ -35,8 +39,9 @@ class Constants:
     # Visuals
     OFFSET_ADVANCES_PREDICTION = 15
     MAX_ADVANCES_HISTORY = 4
-    ICON_DEFAULT_SIZE = 32
+    ICON_DEFAULT_SIZE = 24
     ICON_DEFAULT_SIZE_SMALL = 16
+    ICON_DEFAULT_SIZE_BIG = 42
 
     # Animations
     SCROLL_ANIMATION_DURATION = 180
@@ -44,14 +49,15 @@ class Constants:
     # Other
     MIN_IMG_SIZE_BYTES = 10
     MAX_IMG_SIZE_BYTES = 5 * 1024 * 1024  # 5MB
-    COUNTDOWN_DURATION_SECONDS = 10
     SUPPORTED_FORMATS = ("PNG", "JPEG", "BMP")
+    VALID_OPENCV_BACKENDS = ("DSHOW", "MSMF", "V4L2", "AUTO")
 
     # Default values
     DF_LANG = "en"
     DF_LOG_LEVEL = "INFO"
     DF_DISPLAY_MIN_WIDTH = 1920
     DF_DISPLAY_MIN_HEIGHT = 1080
+    DF_COUNTDOWN_DURATION_TICKS = 10
 
     DF_REIDENT_MIN_VAL = 0
     DF_REIDENT_MAX_VAL = 1_000_000

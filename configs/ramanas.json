@@ -1,15 +1,15 @@
 {
     "name": "Ramanas Park",
-    "description": "Legendary encounters in Ramanas Park.",
+    "description": "Legendary encounters in Ramanas Park. For the record, any of the randomized ones (birds, dogs, latis) have 1 extra RNG advance happen when you put the slate in.\nThis is the RNG call to select which of the randomized options it will pick.\nWhen you only have 1 left, this goes away and it becomes like any of the other single-target Ramanas Park legends.\nSo, typically the delay would need to be 1 less (ie.. 85 down to 84).",
     "image": "eye.png",
     "roi": [
-        718,
-        291,
-        511,
-        487
+        819,
+        571,
+        163,
+        169
     ],
     "plus_one_menu_close": true,
-    "final_a_press_delay": 82,
+    "final_a_press_delay": 84,
     "timeline_buffer": 110,
     "threshold": 0.9,
     "time_delay": 3.0,

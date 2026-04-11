@@ -13,8 +13,6 @@ from ..preferences import Preferences as Prefs
 
 from ..ui.tv_ui import Ui_tv_view
 
-__version__ = "1.0.0"
-
 
 ICONS = {
     "switch_capture": {

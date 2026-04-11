@@ -25,6 +25,10 @@ class Preferences:
         self._theme = Const.DARK_THEME_FILE
         self._language = Const.DF_LANG
         self._log_level = LogLevel.INFO.value
+        self._calibrated_tick = True
+        self._countdown_ticks = Const.DF_COUNTDOWN_DURATION_TICKS
+
+        # Advanced
         self._video_capture_width = Const.DF_DISPLAY_MIN_WIDTH
         self._video_capture_height = Const.DF_DISPLAY_MIN_HEIGHT
         self._capture_backend = Const.DF_CAPTURE_BACKEND
@@ -32,7 +36,6 @@ class Preferences:
         self._capture_codec = Const.DF_CAPTURE_CODEC
         self._gpu_rendering = Const.DF_GPU_RENDERING
         self._display_poll_ms = Const.DF_DISPLAY_POLL_MS
-        self._calibrated_tick = True
         self._smooth_scaling = True
 
         self.load()
@@ -110,6 +113,18 @@ class Preferences:
         self._calibrated_tick = value
 
     @property
+    def countdown_ticks(self):
+        return self._countdown_ticks
+
+    @countdown_ticks.setter
+    def countdown_ticks(self, value):
+        if not isinstance(value, int):
+            raise ValueError(
+                f"countdown_ticks must be a integer value. {value!r}")
+
+        self._countdown_ticks = value
+
+    @property
     def video_capture_width(self):
         return self._video_capture_width
 
@@ -117,7 +132,7 @@ class Preferences:
     def video_capture_width(self, value):
         if not isinstance(value, (int, float)) or value <= 0:
             raise ValueError(
-                f"video_capture_width debe ser positivo, got {value!r}")
+                f"video_capture_width must be positive. {value!r}")
 
         self._video_capture_width = float(value)
 
@@ -129,7 +144,7 @@ class Preferences:
     def video_capture_height(self, value):
         if not isinstance(value, (int, float)) or value <= 0:
             raise ValueError(
-                f"video_capture_height debe ser positivo, got {value!r}")
+                f"video_capture_height must be positive. {value!r}")
 
         self._video_capture_height = float(value)
 
@@ -139,7 +154,7 @@ class Preferences:
 
     @capture_backend.setter
     def capture_backend(self, value):
-        valid = ("DSHOW", "MSMF", "V4L2", "AUTO")
+        valid = Const.VALID_OPENCV_BACKENDS
         value = str(value).upper()
 
         if value not in valid:
@@ -158,7 +173,7 @@ class Preferences:
     def capture_fps(self, value):
         if not isinstance(value, (int, float)) or value <= 0:
             raise ValueError(
-                f"capture_fps must be a positive number, got {value!r}")
+                f"capture_fps must be a positive number. {value!r}")
 
         self._capture_fps = int(value)
 
@@ -170,7 +185,7 @@ class Preferences:
     def capture_codec(self, value):
         if not isinstance(value, str):
             raise ValueError(
-                f"capture_codec must be a string, got {value!r}")
+                f"capture_codec must be a string. {value!r}")
 
         self._capture_codec = value.upper()
 
@@ -182,7 +197,7 @@ class Preferences:
     def display_poll_ms(self, value):
         if not isinstance(value, (int, float)) or value < 0:
             raise ValueError(
-                f"display_poll_ms must be >= 0, got {value!r}")
+                f"display_poll_ms must be >= 0. {value!r}")
 
         self._display_poll_ms = int(value)
 
@@ -226,8 +241,8 @@ class Preferences:
         self.log_level = data.get("log_level", self._log_level)
         self.calibrated_tick = data.get(
             "calibrated_tick", self._calibrated_tick)
-        self.smooth_scaling = data.get(
-            "smooth_scaling", self._smooth_scaling)
+        self.countdown_ticks = data.get(
+            "countdown_ticks", self._countdown_ticks)
 
         # OpenCV settings (advanced.opencv section, with top-level fallback)
         opencv = data.get("advanced", {}).get("opencv", {})
@@ -247,6 +262,8 @@ class Preferences:
             "display_poll_ms", self._display_poll_ms)
         self.gpu_rendering = opencv.get(
             "gpu_rendering", self._gpu_rendering)
+        self.smooth_scaling = data.get(
+            "smooth_scaling", self._smooth_scaling)
 
         self.logg_config()
 

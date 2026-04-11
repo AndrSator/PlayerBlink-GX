@@ -1,12 +1,11 @@
 import sys
-from pathlib import Path
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, \
     QHBoxLayout, QLabel
 
-_ICONS_DIR = Path(__file__).parent.parent.parent / "resources" / "icons"
+from ..constants import Constants as Const
 
 
 _BLINK_ICON_MAP = [
@@ -110,7 +109,7 @@ class AdvanceLabel(QWidget):
 
     def prepend_icon(self, icon):
         if isinstance(icon, int) and 0 <= icon < len(_TIMER_ICON_MAP):
-            path = str(_ICONS_DIR / _TIMER_ICON_MAP[icon])
+            path = str(Const.ICONS_DIR / _TIMER_ICON_MAP[icon])
             pixmap = QIcon(path).pixmap(
                 QSize(self._prepend_icon_size, self._prepend_icon_size))
             self._prepend_icon_label.setPixmap(pixmap)
@@ -121,7 +120,7 @@ class AdvanceLabel(QWidget):
     def append_icon(self, icon):
         # Append icons only support blink types
         if icon is not None and icon != 0:
-            path = str(_ICONS_DIR / _BLINK_ICON_MAP[icon])
+            path = str(Const.ICONS_DIR / _BLINK_ICON_MAP[icon])
             pixmap = QIcon(path).pixmap(
                 QSize(self._append_icon_size, self._append_icon_size))
             self._append_icon_label.setPixmap(pixmap)

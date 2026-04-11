@@ -24,7 +24,7 @@ from src.views.menu import Menu
 
 from src.widgets.cgallery import FileNameDialog
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class Controller:
@@ -788,6 +788,8 @@ class Controller:
 
     # region Countdown
     def update_timeline_labels(self):
+        prefs = Preferences()
+
         # Calcs for countdown auto-start and final A press timing
         trgt = m.spin_advance_target.value()
         timeline_buffer = m.spin_timeline_buffer.value()
@@ -803,7 +805,10 @@ class Controller:
                                  m._final_a_press_adv != trgt and
                                  m._final_a_press_adv > 0)
 
-        lbl_visibles = lbl_timeline_visible and final_a_press_visible
+        lbl_visibles = (
+            lbl_timeline_visible and
+            final_a_press_visible and
+            timeline_buffer >= final_a_press_value + prefs.countdown_ticks)
 
         m.lbl_timeline_start.setText(str(m._countdown_start_at_adv))
         m.lbl_press_a.setText(str(m._final_a_press_adv))
@@ -820,23 +825,34 @@ class Controller:
         # Calcs for NPC
         trgt = m.spin_advance_target.value()
 
-        is_targetable = True
-
-        if (am.simulating):
-            if (trgt < am.advances):
-                is_targetable = False
-                logger.warning(
-                    f"[Controller] Advance {trgt} already past")
-            elif (trgt - am.advances) % (am.npc_count + 1) != 0:
-                is_targetable = False
-                logger.warning(
-                    f"[Controller] Advance {trgt} is not targetable")
+        is_targetable = self._is_advance_targetable(trgt)
 
         m.spin_advance_target.setProperty("error", not is_targetable)
         m.spin_advance_target.style().polish(m.spin_advance_target)
         m.spin_advance_target.update()
 
-    # TODO - Actualizar el label a tiempo real, no por ticks
+    def _is_advance_targetable(self, trgt):
+        if not am.simulating:
+            return True
+
+        # Target not reached but too late to start countdown
+        if (m._final_a_press_adv < am.advances and
+                m.spin_final_a_press_delay.value() > 0):
+            logger.warning(f"[Controller] Advance {trgt} already past")
+            return False
+
+        # Target in the past
+        if trgt < am.advances:
+            logger.warning(f"[Controller] Advance {trgt} already past")
+            return False
+
+        # Target not aligned (player + NPCs)
+        if (trgt - am.advances) % (am.npc_count + 1) != 0:
+            logger.warning(f"[Controller] Advance {trgt} is not targetable")
+            return False
+
+        return True
+
     def _update_adv_trgt_eta_label(self):
         trgt = m.spin_advance_target.value()
 
@@ -845,8 +861,7 @@ class Controller:
             return
 
         remaining = trgt - am.advances
-        advances_per_sec = 1 / am.tick_rate
-        eta_seconds = remaining * advances_per_sec
+        eta_seconds = remaining * am.tick_rate
         m.lbl_adv_trgt_eta.setText(Utils.format_time(eta_seconds))
 
     def handle_countdown(self):
@@ -854,7 +869,7 @@ class Controller:
             logger.debug("[Controller] Cannot start countdown: not simulating")
             return
 
-        total = Const.COUNTDOWN_DURATION_SECONDS
+        total = pref.countdown_ticks
         logger.info(f"[Controller] Starting countdown: {total} game ticks")
         m.start_countdown(total)
         am.start_countdown(total)

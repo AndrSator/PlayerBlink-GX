@@ -197,6 +197,64 @@ class EyeTracker(QObject):
 
     # endregion
 
+    # region Calibration
+    @staticmethod
+    def calibrate_tick_rate(intervals, blink_times):
+        """Estimate the game tick period from observed blink data using
+        ordinary least squares regression on (tick_index, wall_clock).
+
+        Each blink is mapped to its cumulative tick index (blink 0 at the
+        origin) and its perf_counter timestamp. The slope of the best-fit
+        line is the tick period in seconds; its standard error gives a
+        1-sigma uncertainty.
+
+        Designed to be reusable: a manual calibration button can collect
+        a longer (intervals, blink_times) sequence and call this directly.
+
+        Args:
+            intervals: list of integer tick counts between consecutive
+                blinks. intervals[0] is the start-of-recording artifact
+                and is ignored, matching the legacy two-point calibration.
+            blink_times: list of perf_counter timestamps, one per blink.
+                Must be the same length as intervals.
+
+        Returns:
+            (tick_rate, std_error) tuple of floats in seconds, or
+            (None, None) if there is not enough data to fit a line.
+        """
+        n = len(blink_times)
+        if n < 3 or len(intervals) != n:
+            return None, None
+
+        # Cumulative tick index of each blink (blink 0 at origin)
+        tick_indices = np.zeros(n, dtype=np.float64)
+        for i in range(1, n):
+            tick_indices[i] = tick_indices[i - 1] + intervals[i]
+
+        if tick_indices[-1] <= 0:
+            return None, None
+
+        x = tick_indices
+        y = np.asarray(blink_times, dtype=np.float64)
+
+        x_mean = x.mean()
+        y_mean = y.mean()
+        dx = x - x_mean
+        sxx = float((dx * dx).sum())
+        if sxx <= 0:
+            return None, None
+
+        slope = float((dx * (y - y_mean)).sum() / sxx)
+        intercept = y_mean - slope * x_mean
+
+        residuals = y - (slope * x + intercept)
+        sigma2 = float((residuals * residuals).sum()) / (n - 2)
+        se_slope = float(np.sqrt(sigma2 / sxx))
+
+        return slope, se_slope
+
+    # endregion
+
     # region Tracking loop
     def _tracking_loop(self):
         threshold = self._threshold
@@ -205,11 +263,11 @@ class EyeTracker(QObject):
 
         blinks = []
         intervals = []
+        blink_times = []  # perf_counter per blink, for calibration
         raw_intervals = []  # float seconds (for munchlax recovery)
         prev_time = time.perf_counter()
         prev_roi = None
         offset_time = 0.0
-        first_blink_time = 0.0
         detect_state = BlinkType.IDLE
 
         while self._running:
@@ -268,9 +326,7 @@ class EyeTracker(QObject):
                         blinks.append(0)
                         intervals.append(round(interval))
                         raw_intervals.append(now - prev_time)
-
-                        if len(blinks) == 1:
-                            first_blink_time = now
+                        blink_times.append(now)
 
                         if len(intervals) == target_size:
                             offset_time = now
@@ -311,11 +367,16 @@ class EyeTracker(QObject):
         if not preview_only and len(blinks) >= target_size:
             end_time = time.perf_counter()
 
-            # Calibrate tick rate from observed data:
-            total_ticks = sum(intervals[1:])
-            if total_ticks > 0 and first_blink_time > 0:
-                self._calibrated_tick = (
-                    (offset_time - first_blink_time) / total_ticks)
+            # Calibrate tick rate via linear regression on blink data
+            tick_rate, se_tick = self.calibrate_tick_rate(
+                intervals, blink_times)
+            if tick_rate is not None:
+                self._calibrated_tick = tick_rate
+                logger.info(
+                    f"[EyeTracker] Calibrated tick_rate="
+                    f"{tick_rate * 1000:.3f}ms/tick "
+                    f"(\u00b1{se_tick * 1000:.3f}ms) "
+                    f"from {len(blink_times)} blinks")
 
             self.tracking_finished.emit(
                 blinks, intervals, raw_intervals, offset_time, end_time)

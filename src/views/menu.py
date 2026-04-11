@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent
 from PySide6.QtGui import QPixmap
 
 from ..eye_tracker import BlinkType
+from ..preferences import Preferences
 from ..constants import Constants as Const
 
 from ..widgets.cadvance_label import AdvanceLabel
@@ -15,7 +16,6 @@ from .cwindow import CWindow
 from .icon_utils import setup_icons
 from ..ui.menu_ui import Ui_menu_view
 
-__version__ = "1.0.0"
 
 _TABS = {
     "MAIN": 0,
@@ -41,13 +41,25 @@ _ICONS = {
         "icon": "bug.svg",
     },
     # Other buttons
+    "switch_tracking": {
+        "icon": "mystery.svg",
+        "size": Const.ICON_DEFAULT_SIZE_BIG
+    },
+    "switch_tracking_tidsid": {
+        "icon": "id_card.svg",
+        "size": Const.ICON_DEFAULT_SIZE_BIG
+    },
+    "btn_reidentify": {
+        "icon": "sync.svg",
+        "size": Const.ICON_DEFAULT_SIZE_BIG
+    },
     "btn_start_countdown": {
         "icon": "timer.svg",
-        "auto_resize": True,
-        "size": 42
+        "size": Const.ICON_DEFAULT_SIZE_BIG
     },
     "switch_seed_display": {
         "icon": "memory.svg",
+        "size": Const.ICON_DEFAULT_SIZE_SMALL
     },
     "btn_create_resource": {
         "icon": "add_photo.svg",
@@ -526,8 +538,9 @@ class Menu(CWindow):
         self.switch_tracking_tidsid.setVisible(not tracking)
         self.btn_reidentify.setVisible(not tracking)
 
-        self.switch_tracking.setText(
-            "STOP" if tracking else "MONITOR BLINKS")
+        # self.switch_tracking.setText(
+        #     "STOP" if tracking else "MONITOR BLINKS")
+        # TODO - Change icon according
         self.switch_preview_tracking.setText(
             "STOP" if preview else "PREVIEW")
 
@@ -681,13 +694,28 @@ class Menu(CWindow):
 
         # Add predictions (each with its own blink type)
         for adv, val, pred_blink in predictions:
-            target = self.spin_advance_target.value()
-            adv_type = TimelineEntry.PREDICTED if adv != target \
-                else TimelineEntry.TARGET
+            # target = self.spin_advance_target.value()
+            adv_type = self._get_adv_type(adv)
             self._add_timeline_entry(adv, pred_blink, adv_type)
 
         container.setUpdatesEnabled(True)
         self._scroll_to_current(trimmed_height)
+
+    def _get_adv_type(self, adv):
+        prefs = Preferences()
+
+        target = self.spin_advance_target.value()
+        countdown_finished_at = (
+            self._countdown_start_at_adv +
+            prefs.countdown_ticks
+        )
+
+        if (adv == target or
+            adv == self._final_a_press_adv or
+                adv == countdown_finished_at):
+            return TimelineEntry.TARGET
+
+        return TimelineEntry.PREDICTED
 
     def _add_timeline_entry(self, advance, blink_type, state):
         # Eye icon
