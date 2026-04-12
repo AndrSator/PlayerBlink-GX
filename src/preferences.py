@@ -1,5 +1,6 @@
 import json
 
+from src.capture import backend
 from src.log import logger, LogLevel
 from src.constants import Constants as Const
 
@@ -31,9 +32,9 @@ class Preferences:
         # Advanced
         self._video_capture_width = Const.DF_DISPLAY_MIN_WIDTH
         self._video_capture_height = Const.DF_DISPLAY_MIN_HEIGHT
-        self._capture_backend = Const.DF_CAPTURE_BACKEND
-        self._capture_fps = Const.DF_CAPTURE_FPS
-        self._capture_codec = Const.DF_CAPTURE_CODEC
+        self._capture_backend = backend.default_name()
+        self._capture_fps = backend.DF_CAPTURE_FPS
+        self._capture_codec = backend.DF_CAPTURE_CODEC
         self._gpu_rendering = Const.DF_GPU_RENDERING
         self._display_poll_ms = Const.DF_DISPLAY_POLL_MS
         self._smooth_scaling = True
@@ -154,14 +155,15 @@ class Preferences:
 
     @capture_backend.setter
     def capture_backend(self, value):
-        valid = Const.VALID_OPENCV_BACKENDS
+        valid = backend.all_names()
         value = str(value).upper()
 
         if value not in valid:
+            default = backend.default_name()
             logger.warning(
                 f"[Preferences] Invalid backend '{value}', "
-                f"using default: {Const.DF_CAPTURE_BACKEND}")
-            value = Const.DF_CAPTURE_BACKEND
+                f"using default: {default}")
+            value = default
 
         self._capture_backend = value
 

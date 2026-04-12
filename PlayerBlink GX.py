@@ -1,8 +1,8 @@
+import os
 import sys
+import cv2
 import time
 import configparser
-
-import cv2
 
 from PySide6 import QtWidgets
 from PySide6.QtCore import Qt, QTimer
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QDialog
 
 from src import CvControl, EyeTracker, AdvanceManager, \
     Calc, Xorshift
+from src.cv_control import CaptureState
 
 from src.log import logger
 from src.utils import Utils
@@ -24,7 +25,7 @@ from src.views.menu import Menu
 
 from src.widgets.cgallery import FileNameDialog
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 
 class Controller:
@@ -62,6 +63,7 @@ class Controller:
         # Video
         cvc.capture_started.connect(self.on_capture_started)
         cvc.window_minimized.connect(self.on_window_minimized)
+        cvc.state_changed.connect(self.on_capture_state_changed)
 
         # AdvanceManager
         am.advance_tick.connect(self._on_advance_tick)
@@ -161,8 +163,10 @@ class Controller:
             tvw.toggle_crop_tracking_area)
         tvw.switch_crop_eye.clicked.connect(tvw.toggle_crop_eye)
         tvw.switch_monitor_mode.clicked.connect(self.toggle_monitor_mode)
-        tvw.cmb_windows_list.currentIndexChanged.connect(
+        tvw.cmb_windows_list.activated.connect(
             self.on_window_selected)
+
+        tvw.patch_single_item_combo()
 
         # Debug
         m.btn_generate_blinks.clicked.connect(self.debug_generate_blinks)
@@ -726,6 +730,9 @@ class Controller:
 
     def toggle_monitor_mode(self):
         enabled = cvc.toggle_monitor_mode()
+        logger.debug(
+            f"[Controller] toggle_monitor_mode: enabled={enabled} "
+            f"monitor_supported={cvc._monitor_supported}")
 
         if not enabled:
             cvc.stop_capture()
@@ -738,21 +745,27 @@ class Controller:
             tvw.clear_display()
             self.refresh_windows()
 
-            if tvw.cmb_windows_list.count() > 0:
+            combo_count = tvw.cmb_windows_list.count()
+            logger.debug(
+                f"[Controller] toggle_monitor_mode: combo has "
+                f"{combo_count} items after refresh")
+
+            if combo_count > 0:
                 self.on_window_selected(0)
             else:
                 tvw.set_no_windows_text()
                 tvw.cmb_windows_list.setEnabled(False)
 
     def refresh_windows(self):
-        if sys.platform != 'win32':
-            return
-
         if not cvc.monitor_mode:
             return
 
         cvc.setup_windows()
         windows = cvc.get_windows_titles()
+
+        logger.debug(
+            f"[Controller] refresh_windows: {len(windows)} titles "
+            f"to populate combo")
 
         self._refreshing_windows = True
         tvw.populate_window_menu(windows if windows else [])
@@ -774,6 +787,9 @@ class Controller:
             tvw.set_minimized_text()
         else:
             tvw.clear_error_text()
+
+    def on_capture_state_changed(self, state):
+        tvw.display.set_loading(state == CaptureState.LOADING)
 
     def _poll_frame(self):
         frame = cvc.read_frame()
@@ -1079,9 +1095,19 @@ def show_windows(menu, tv_window):
 
 
 if __name__ == "__main__":
+    # Wayland workaround
+    if Const.PLATFORM_LINUX:
+        if Const.LINUX_FORCE_XCB:
+            os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+        if Const.LINUX_FORCE_SDL_X11:
+            os.environ.setdefault("SDL_VIDEODRIVER", "x11")
+
     QtWidgets.QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.Round)
     app = QtWidgets.QApplication(sys.argv)
+
+    if Const.PLATFORM_LINUX:
+        app.setStyle("Fusion")
 
     pref = Preferences()
 

@@ -226,6 +226,20 @@ class TvWindow(CWindow):
             self.cmb_windows_list.addItem(title)
             logger.debug(f"[TvWindow] Added window to menu: {title}")
 
+    def patch_single_item_combo(self):
+        """ Patch the window combo so that with a single item
+        (Linux portal placeholder)"""
+        combo = self.cmb_windows_list
+        original_show_popup = combo.showPopup
+
+        def patched_show_popup():
+            if combo.count() == 1:
+                combo.activated.emit(0)
+                return
+            original_show_popup()
+
+        combo.showPopup = patched_show_popup
+
     def clear_display(self):
         self._last_frame = None
         self.display.clear()

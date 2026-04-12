@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 
@@ -5,6 +6,15 @@ class Constants:
     """ Application-wide constants and default values """
 
     DEBUG_MODE = True
+
+    # Platform detection (resolved once at import time)
+    PLATFORM_WINDOWS = sys.platform == "win32"
+    PLATFORM_LINUX = sys.platform.startswith("linux")
+    PLATFORM_MAC = sys.platform == "darwin"
+
+    # TODO: move to Preferences once tested in production.
+    LINUX_FORCE_XCB = True       # sets QT_QPA_PLATFORM=xcb
+    LINUX_FORCE_SDL_X11 = True   # sets SDL_VIDEODRIVER=x11
 
     # Logic
     DOUBLE_BLINK_MARGIN_SECONDS = 0.7
@@ -16,14 +26,7 @@ class Constants:
     BLINK_TYPE_MASK = 0x03  # 0b0011
     MAX_23BIT_INT = (1 << 23) - 1  # 0x7fffff, used to normalize RNG to float
 
-    # Capture
-    MSMF_HW_TRANSFORMS = False  # Disable MSMF hardware transforms (latency)
-    WINDOW_CAPTURE_INTERVAL = 1 / 60  # Throttle for screenshot-based capture
-
-    # Capture defaults
-    DF_CAPTURE_BACKEND = "DSHOW"  # DSHOW, MSMF, V4L2, or AUTO
-    DF_CAPTURE_FPS = 60
-    DF_CAPTURE_CODEC = "MJPG"  # MJPG, YUY2, H264, or empty for auto
+    # Display
     DF_DISPLAY_POLL_MS = 0  # 0 = match capture FPS, >0 = fixed ms interval
     DF_GPU_RENDERING = True  # True = GPU scales via OpenGL, False = CPU scales
 
@@ -32,7 +35,6 @@ class Constants:
     BLINKS_REQUIRED_REIDENTIFY = 7
     BLINKS_REQUIRED_REIDENTIFY_NOISY = 20
     BLINKS_REQUIRED_TRACKING_TIDSID = 64
-    FRAME_INTERVAL = 1 / 60
     REIDENT_MIN = 0
     REIDENT_MAX = 2_000_000
 
@@ -50,7 +52,6 @@ class Constants:
     MIN_IMG_SIZE_BYTES = 10
     MAX_IMG_SIZE_BYTES = 5 * 1024 * 1024  # 5MB
     SUPPORTED_FORMATS = ("PNG", "JPEG", "BMP")
-    VALID_OPENCV_BACKENDS = ("DSHOW", "MSMF", "V4L2", "AUTO")
 
     # Default values
     DF_LANG = "en"
@@ -73,6 +74,7 @@ class Constants:
 
     FONTS_DIR = RESOURCE_DIR / "fonts"
     ICONS_DIR = RESOURCE_DIR / "icons"
+    SHADERS_DIR = RESOURCE_DIR / "shaders"
     EYES_DIR = IMAGES_DIR / "eyes"
     CONFIGS_DIR = BASE_DIR / "configs"
 

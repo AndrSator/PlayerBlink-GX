@@ -1,9 +1,9 @@
 import os
 
-from PySide6.QtGui import QIcon, QIconEngine, QPainter, QPixmap, QPalette
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtCore import (
-    Qt, QByteArray, QObject, QEvent, QSize, QRect, QRectF)
+from PySide6.QtGui import QIcon, QIconEngine, QPainter, QPixmap, QPalette
+from PySide6.QtCore import Qt, QByteArray, QObject, QEvent, QSize, \
+    QRect, QRectF
 
 from ..constants import Constants as Const
 

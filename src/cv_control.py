@@ -1,76 +1,28 @@
 import os
-import sys
+import cv2
 import time
 
 from enum import Enum, auto
 from threading import Thread, Lock
-from pygrabber.dshow_graph import FilterGraph
 
 from PySide6.QtCore import QObject, Signal
 
+from src.capture import backend as capture_backend
+from src.capture import Device, Window, make_enumerator, make_window_enumerator
+
 from src.log import logger
+from src.utils import Utils
 from src.constants import Constants as Const
 from src.preferences import Preferences as Prefs
 
-if not Const.MSMF_HW_TRANSFORMS:
-    os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 
-import cv2
-
-if sys.platform == "win32":
-    import win32gui
-    import win32process
-    from .windowcapture import WindowCapture
-
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 # region Models and Enums
-class Device:
-    """ Represents an input device (webcam, capture card, etc.) """
-
-    def __init__(self, index, name):
-        self._index = index
-        self._name = name
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def index(self):
-        return self._index
-
-    def __str__(self):
-        return f"{self._name} ({self._index})"
-
-
-class Window:
-    """ Represents a window to capture (monitor mode/Windows only) """
-
-    def __init__(self, handle, title, pid):
-        self._handle = handle
-        self._title = title
-        self._pid = pid
-
-    @property
-    def handle(self):
-        return self._handle
-
-    @property
-    def title(self):
-        return self._title
-
-    @property
-    def pid(self):
-        return self._pid
-
-    def __str__(self):
-        return f"{self._title} ({self._pid})"
-
-
 class CaptureState(Enum):
     IDLE = auto()
+    LOADING = auto()
     CAPTURING = auto()
     PAUSED = auto()
     ERROR = auto()
@@ -83,21 +35,33 @@ class CvControl(QObject):
 
     # Machine transitions
     _VALID_TRANSITIONS = {
-        (CaptureState.IDLE, CaptureState.CAPTURING),
+        # Startup
+        (CaptureState.IDLE, CaptureState.LOADING),
+        (CaptureState.LOADING, CaptureState.CAPTURING),
+        (CaptureState.LOADING, CaptureState.IDLE),
+        (CaptureState.LOADING, CaptureState.ERROR),
+        (CaptureState.ERROR, CaptureState.LOADING),
+
+        # Pause/resume
         (CaptureState.CAPTURING, CaptureState.PAUSED),
         (CaptureState.CAPTURING, CaptureState.IDLE),
         (CaptureState.PAUSED, CaptureState.CAPTURING),
         (CaptureState.PAUSED, CaptureState.IDLE),
+
+        # Errors
         (CaptureState.IDLE, CaptureState.ERROR),
         (CaptureState.CAPTURING, CaptureState.ERROR),
         (CaptureState.PAUSED, CaptureState.ERROR),
         (CaptureState.ERROR, CaptureState.IDLE),
+
+        # Monitor mode
         (CaptureState.IDLE, CaptureState.MINIMIZED),
+        (CaptureState.LOADING, CaptureState.MINIMIZED),
         (CaptureState.CAPTURING, CaptureState.MINIMIZED),
         (CaptureState.PAUSED, CaptureState.MINIMIZED),
         (CaptureState.MINIMIZED, CaptureState.CAPTURING),
         (CaptureState.MINIMIZED, CaptureState.IDLE),
-        (CaptureState.MINIMIZED, CaptureState.ERROR)
+        (CaptureState.MINIMIZED, CaptureState.ERROR),
     }
 
     _PROP_NAMES = {
@@ -127,11 +91,13 @@ class CvControl(QObject):
     # Signals
     capture_started = Signal(bool)
     window_minimized = Signal(bool)
+    state_changed = Signal(object)
 
     def __init__(self):
         super().__init__()
 
-        self._graph = FilterGraph()
+        self._enumerator = make_enumerator()
+        self._window_enumerator = make_window_enumerator()
 
         self._state = CaptureState.IDLE
         self._capture = None
@@ -141,13 +107,14 @@ class CvControl(QObject):
         self._running = False
 
         # Video capture devices
-        self._devices = []
-        self._current_device = None
+        self._devices: dict[str, Device] = {}
+        self._current_device: Device | None = None
 
         # Windows (monitor mode)
-        self._windows = []
-        self._current_window = None
+        self._windows: list[Window] = []
+        self._current_window: Window | None = None
         self._monitor_mode = False
+        self._monitor_supported = True
         self._blacklist = None
 
         self.populate_blacklist()
@@ -193,15 +160,19 @@ class CvControl(QObject):
         self._current_device = value
 
     def setup_devices(self):
-        self._devices = [Device(index, name) for index,
-                         name in enumerate(self._graph.get_input_devices())]
+        enumerated = self._enumerator.list_devices()
+        fresh: dict[str, Device] = {dev.uid: dev for dev, _ in enumerated}
 
-        if self.current_device is None:
-            self.current_device = self._devices[0] if self._devices else None
+        self._devices = fresh
+
+        if self.current_device is None or \
+                self.current_device.uid not in self._devices:
+            self.current_device = next(iter(self._devices.values()), None)
 
         logger.debug(
             self._devices and f"[CvControl] Available devices: {[
-                str(d) for d in self._devices]}" or "No capture devices found")
+                str(d) for d in self._devices.values()]}"
+            or "No capture devices found")
 
     def set_next_device(self):
         self._set_device_by_offset(1)
@@ -213,9 +184,14 @@ class CvControl(QObject):
         if not self._devices or len(self._devices) <= 1:
             return
 
-        curr_index = self.current_device.index
-        next_index = (curr_index + offset) % len(self._devices)
-        self.set_device(self._devices[next_index])
+        uids = list(self._devices.keys())
+        try:
+            curr = uids.index(self.current_device.uid)
+        except (ValueError, AttributeError):
+            curr = 0
+
+        next_uid = uids[(curr + offset) % len(uids)]
+        self.set_device(self._devices[next_uid])
         logger.debug(f"[CvControl] Device switched to: {self.current_device}")
 
     def _prop_name(self, prop_id: int) -> str:
@@ -297,36 +273,26 @@ class CvControl(QObject):
         logger.debug(f"[CvControl] Blacklist loaded: {self._blacklist}")
 
     def setup_windows(self):
-        if sys.platform != 'win32':  # Windows only
-            self.windows = []
-            return
-
         current_pid = os.getpid()
-        windows = []
 
-        def callback(hwnd, _):
-            if not win32gui.IsWindowVisible(hwnd):
-                return
-
-            title = win32gui.GetWindowText(hwnd)
-            if not title:
-                return
-
-            if self._blacklist and \
-                    any(w.lower() in title.lower() for w in self._blacklist):
-                return
-
-            _, pid = win32process.GetWindowThreadProcessId(hwnd)
-
-            # Ignore self windows to avoid capture conflicts
-            if pid == current_pid:
-                return
-
-            windows.append(Window(hwnd, title, pid))
-
-        win32gui.EnumWindows(callback, None)
-
-        self._windows = windows
+        try:
+            self._windows = self._window_enumerator.list_windows(
+                blacklist=self._blacklist,
+                exclude_pids=[current_pid],
+            )
+            self._monitor_supported = True
+        except NotImplementedError:
+            logger.debug(
+                "[CvControl] Window monitoring not implemented on this "
+                "platform")
+            self._windows = []
+            self._monitor_supported = False
+            return
+        except Exception as e:
+            logger.error(f"[CvControl] Failed to enumerate windows: {e}")
+            self._windows = []
+            self._monitor_supported = False
+            return
 
         logger.debug(
             self._windows and f"[CvControl] Available windows: {[
@@ -337,10 +303,10 @@ class CvControl(QObject):
         return self.windows
 
     def toggle_monitor_mode(self):
-        if sys.platform != 'win32':  # Windows only
+        if not self._monitor_supported:
             self.monitor_mode = False
             logger.warning(
-                "[CvControl] Monitor mode is only available on Windows.")
+                "[CvControl] Monitor mode is not supported on this platform.")
             return
 
         self.monitor_mode = not self.monitor_mode
@@ -355,18 +321,29 @@ class CvControl(QObject):
         return self._state
 
     def start_capture(self):
+        logger.debug(
+            f"[CvControl] start_capture: state={self._state.name} "
+            f"monitor_mode={self._monitor_mode} "
+            f"current_device={self._current_device} "
+            f"current_window={self._current_window}")
         self._stop_worker()
 
         with self._lock:
             if self._state == CaptureState.CAPTURING:
+                logger.debug(
+                    "[CvControl] start_capture: already CAPTURING, noop")
                 return
 
             if self._state == CaptureState.PAUSED:
+                logger.debug(
+                    "[CvControl] start_capture: resuming from PAUSED")
                 self._transition(CaptureState.CAPTURING)
                 return
 
             if self.monitor_mode:
                 if self.current_window is None:
+                    logger.error(
+                        "[CvControl] start_capture: no current_window")
                     self._transition(CaptureState.ERROR)
                     self.capture_started.emit(False)
                     return
@@ -374,15 +351,22 @@ class CvControl(QObject):
                 target_loop = self._window_capture_loop
             else:
                 if self.current_device is None:
+                    logger.error(
+                        "[CvControl] start_capture: no current_device")
                     self._transition(CaptureState.ERROR)
                     self.capture_started.emit(False)
                     return
 
                 target_loop = self._capture_loop
 
+            self._transition(CaptureState.LOADING)
+
         self._running = True
         self._worker = Thread(target=target_loop, daemon=True)
         self._worker.start()
+        logger.debug(
+            f"[CvControl] start_capture: worker thread started "
+            f"({target_loop.__name__})")
 
     def _transition(self, target):
         if self._state == target:
@@ -395,6 +379,7 @@ class CvControl(QObject):
             f"[CvControl] Transition: "
             f"{self._state.name} -> {target.name}")
         self._state = target
+        self.state_changed.emit(target)
 
     def _stop_worker(self):
         self._running = False
@@ -471,26 +456,95 @@ class CvControl(QObject):
 
     # endregion
 
-    _BACKEND_MAP = {
-        "DSHOW": cv2.CAP_DSHOW,
-        "MSMF": cv2.CAP_MSMF,
-        "V4L2": getattr(cv2, "CAP_V4L2", None),
-        "AUTO": None,
-    }
-
     # region Capture loops
     def _capture_loop(self):
-        source = self.current_device.index
-        prefs = Prefs()
+        device = self.current_device
+        logger.debug(
+            "[CvControl] _capture_loop starting for device "
+            f"uid={device.uid!r} name={device.name!r}")
 
-        backend = self._BACKEND_MAP.get(prefs.capture_backend)
-        if backend is not None:
-            cap = cv2.VideoCapture(source, backend)
+        com_initialized = False
+        if Const.PLATFORM_WINDOWS:
+            try:
+                import comtypes
+                comtypes.CoInitialize()
+                com_initialized = True
+                logger.debug("[CvControl] CoInitialize() succeeded on worker")
+            except Exception as e:
+                logger.warning(
+                    f"[CvControl] CoInitialize() failed: {e}")
+
+        try:
+            self._run_capture_loop(device)
+        finally:
+            if com_initialized:
+                try:
+                    import comtypes
+                    comtypes.CoUninitialize()
+                    logger.debug(
+                        "[CvControl] CoUninitialize() on worker exit")
+                except Exception:
+                    pass
+
+    def _run_capture_loop(self, device):
+        source = self._enumerator.resolve_index(device.uid)
+        logger.debug(
+            f"[CvControl] resolve_index({device.uid!r}) -> {source}")
+
+        if source is None:
+            logger.error(
+                f"[CvControl] Device no longer available: {device}")
+
+            with self._lock:
+                self._transition(CaptureState.ERROR)
+
+            self.capture_started.emit(False)
+            return
+
+        prefs = Prefs()
+        effective_backend, backend_flag = capture_backend.resolve(
+            prefs.capture_backend)
+
+        if effective_backend != prefs.capture_backend.upper():
+            logger.warning(
+                f"[CvControl] Backend '{prefs.capture_backend}' is not valid "
+                f"on this platform; falling back to '{effective_backend}'")
+
+        logger.debug(
+            f"[CvControl] Backend: requested={prefs.capture_backend!r} "
+            f"effective={effective_backend!r} cv2_flag={backend_flag}")
+        logger.debug(
+            f"[CvControl] Opening cv2.VideoCapture(source={source}, "
+            f"backend={effective_backend})")
+
+        if backend_flag is not None:
+            cap = cv2.VideoCapture(source, backend_flag)
         else:
             cap = cv2.VideoCapture(source)
 
+        logger.debug(
+            f"[CvControl] cv2.VideoCapture constructed: "
+            f"isOpened={cap.isOpened()} "
+            f"backendName={cap.getBackendName() if cap.isOpened() else 'N/A'}")
+
         if not self._running:
+            logger.debug(
+                "[CvControl] _running went False during open, releasing")
             cap.release()
+            return
+
+        if not cap.isOpened():
+            cap.release()
+            logger.error(
+                f"[CvControl] Couldn't open source: index={source} "
+                f"backend={effective_backend} "
+                f"device={device}")
+
+            with self._lock:
+                self._transition(CaptureState.ERROR)
+
+            self.capture_started.emit(False)
+
             return
 
         config = {
@@ -514,8 +568,8 @@ class CvControl(QObject):
 
             if prop == cv2.CAP_PROP_FOURCC:
                 config_info += (
-                    f"  {name:20s} req={_fourcc_str(val):>6s}"
-                    f"  actual={_fourcc_str(curr):>6s}  [{status}]\n")
+                    f"  {name:20s} req={Utils.fourcc_str(val):>6s}"
+                    f"  actual={Utils.fourcc_str(curr):>6s}  [{status}]\n")
             else:
                 config_info += (
                     f"  {name:20s} req={val:>8.1f}"
@@ -524,52 +578,70 @@ class CvControl(QObject):
         logger.debug(
             f"[CvControl] Config requested vs accepted:\n{config_info}")
 
-        # Log the actual final state of the camera after all settings applied
-        final_info = ""
-        for prop_id, name in sorted(self._PROP_NAMES.items()):
-            val = cap.get(prop_id)
-            if val == -1.0 and prop_id not in config:
-                continue
-            if prop_id == cv2.CAP_PROP_FOURCC:
-                final_info += f"  {name:20s} = {_fourcc_str(val)}\n"
-            else:
-                final_info += f"  {name:20s} = {val}\n"
+        if capture_backend.DEBUG_CAPTURE_PROPS:
+            final_info = ""
+            for prop_id, name in sorted(self._PROP_NAMES.items()):
+                val = cap.get(prop_id)
 
-        logger.debug(
-            f"[CvControl] Actual camera state:\n{final_info}")
+                if val == -1.0 and prop_id not in config:
+                    continue
 
-        if not cap.isOpened():
-            cap.release()
-            logger.error(f"[CvControl] Couldn't open source: {source}")
+                val_str = f"{Utils.fourcc_str(val)
+                             if prop_id == cv2.CAP_PROP_FOURCC
+                             else val}"
+                final_info += f"  {name:20s} = {val_str}\n"
 
-            with self._lock:
-                self._transition(CaptureState.ERROR)
-
-            self.capture_started.emit(False)
-
-            return
+            logger.debug(
+                f"[CvControl] Actual camera state:\n{final_info}")
 
         with self._lock:
             self._capture = cap
-            self._transition(CaptureState.CAPTURING)
 
-        self.capture_started.emit(True)
+        logger.debug(
+            f"[CvControl] Entering read loop for {device.name} "
+            f"(still LOADING, waiting for first frame)")
+
+        consecutive_failures = 0
+        first_frame_received = False
+        MAX_FAILURES_BEFORE_LOG = 30
 
         while self._running:
             with self._lock:
                 state = self._state
 
             if state == CaptureState.PAUSED:
-                time.sleep(Const.FRAME_INTERVAL)
+                time.sleep(capture_backend.FRAME_INTERVAL)
                 continue
-            if state != CaptureState.CAPTURING:
+
+            if state not in (CaptureState.CAPTURING, CaptureState.LOADING):
                 break
 
-            # read() blocks until a new frame is available — no sleep needed
             ret, frame = cap.read()
 
             if not ret:
+                consecutive_failures += 1
+                if consecutive_failures == 1 or \
+                        consecutive_failures % MAX_FAILURES_BEFORE_LOG == 0:
+                    logger.warning(
+                        f"[CvControl] cap.read() returned ret=False "
+                        f"(count={consecutive_failures}) isOpened="
+                        f"{cap.isOpened()}")
                 continue
+
+            if consecutive_failures:
+                logger.debug(
+                    f"[CvControl] Read recovered after "
+                    f"{consecutive_failures} failures")
+                consecutive_failures = 0
+
+            if not first_frame_received:
+                first_frame_received = True
+                logger.debug(
+                    f"[CvControl] First frame received from {device.name} "
+                    f"({frame.shape[1]}x{frame.shape[0]})")
+                with self._lock:
+                    self._transition(CaptureState.CAPTURING)
+                self.capture_started.emit(True)
 
             if Const.DEBUG_MODE:
                 self._frame_count += 1
@@ -581,24 +653,25 @@ class CvControl(QObject):
                 h, w = frame.shape[:2]
                 overlay_lines = [
                     f"{w}x{h} | FPS: {self._fps:.1f}",
-                    f"FOURCC: {_fourcc_str(cap.get(cv2.CAP_PROP_FOURCC))}",
+                    f"FOURCC: {Utils.fourcc_str(
+                        cap.get(cv2.CAP_PROP_FOURCC))}",
                 ]
                 y = 30
                 for line in overlay_lines:
-                    cv2.putText(frame, line, (10, y),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(
+                        frame, line, (10, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                     y += 30
 
             with self._lock:
                 self._last_frame = frame
 
     def _window_capture_loop(self):
-        hwnd = self._current_window.handle
-        title = self._current_window.title
+        window = self._current_window
         cap = None
 
         while self._running:
-            is_minimized = win32gui.IsIconic(hwnd)
+            is_minimized = self._window_enumerator.is_minimized(window)
 
             if is_minimized:
                 cap = self._handle_window_minimized(cap)
@@ -606,13 +679,13 @@ class CvControl(QObject):
                 continue
 
             if self._state == CaptureState.MINIMIZED:
-                cap = self._handle_window_restored(title)
+                cap = self._handle_window_restored(window)
                 if cap is None:
                     return
                 continue
 
             if cap is None:
-                cap = self._open_window_capture(title)
+                cap = self._open_window_capture(window)
                 if cap is None:
                     return
                 continue
@@ -621,17 +694,16 @@ class CvControl(QObject):
                 state = self._state
 
             if state == CaptureState.PAUSED:
-                time.sleep(Const.FRAME_INTERVAL)
+                time.sleep(capture_backend.FRAME_INTERVAL)
                 continue
 
-            if state != CaptureState.CAPTURING:
+            if state not in (CaptureState.CAPTURING, CaptureState.LOADING):
                 break
 
-            if not self._read_window_frame(cap, title):
+            if not self._read_window_frame(cap, window):
                 return
 
-            # WindowCapture.read() is a screenshot (non-blocking), throttle
-            time.sleep(Const.WINDOW_CAPTURE_INTERVAL)
+            time.sleep(capture_backend.WINDOW_CAPTURE_INTERVAL)
 
         if cap is not None:
             cap.release()
@@ -647,12 +719,17 @@ class CvControl(QObject):
 
         return None
 
-    def _handle_window_restored(self, title):
-        """ Reopen capture after window is restored """
+    def _handle_window_restored(self, window):
+        """ Reopen capture after window is restored.
+
+        Window capture is effectively instant (BitBlt / XGetImage), so we
+        transition straight to CAPTURING here without passing through
+        LOADING — there is no noticeable startup cost to report.
+        """
         try:
-            cap = WindowCapture(title, [0, 0, 0, 0])
+            cap = self._window_enumerator.open_capture(window)
         except Exception as e:
-            logger.error(f"[CvControl] Couldn't reopen '{title}': {e}")
+            logger.error(f"[CvControl] Couldn't reopen '{window.title}': {e}")
 
             with self._lock:
                 self._transition(CaptureState.ERROR)
@@ -670,12 +747,17 @@ class CvControl(QObject):
 
         return cap
 
-    def _open_window_capture(self, title):
-        """Open WindowCapture for the first time """
+    def _open_window_capture(self, window):
+        """ Open a WindowCapturer for the first time.
+
+        Transitions LOADING -> CAPTURING directly because window capture
+        starts instantly.
+        """
         try:
-            cap = WindowCapture(title, [0, 0, 0, 0])
+            cap = self._window_enumerator.open_capture(window)
         except Exception as e:
-            logger.error(f"[CvControl] Couldn't open window '{title}': {e}")
+            logger.error(
+                f"[CvControl] Couldn't open window '{window.title}': {e}")
 
             with self._lock:
                 self._transition(CaptureState.ERROR)
@@ -692,7 +774,7 @@ class CvControl(QObject):
 
         return cap
 
-    def _read_window_frame(self, cap, title):
+    def _read_window_frame(self, cap, window):
         """ Read a frame. Returns False on fatal error """
         try:
             ret, frame = cap.read()
@@ -703,23 +785,14 @@ class CvControl(QObject):
 
             return True
         except Exception as e:
-            logger.error(f"[CvControl] Error capturing '{title}': {e}")
+            logger.error(
+                f"[CvControl] Error capturing '{window.title}': {e}")
             with self._lock:
                 self._transition(CaptureState.ERROR)
             self.capture_started.emit(False)
             return False
 
     # endregion
-
-
-@staticmethod
-def _fourcc_str(val: float) -> str:
-    """ Convert FOURCC int to string, or return 'N/A' if invalid/zero """
-    v = int(val)
-    if v <= 0:
-        return "N/A"
-
-    return "".join(chr((v >> (8 * i)) & 0xFF) for i in range(4))
 
 # endregion
 

@@ -4,13 +4,23 @@ from src.constants import Constants as Const
 
 class Utils:
     @staticmethod
-    def blink_from_rng(value):
+    def blink_from_rng(value) -> BlinkType:
         """ Extract BlinkType from a raw RNG value, or None if no blink """
 
         if (value & Const.BLINK_BIT_MASK) == 0:
             return BlinkType.DOUBLE if (value & 1) else BlinkType.SINGLE
 
         return None
+
+    @staticmethod
+    def fourcc_str(val: float) -> str:
+        """ Convert FOURCC int to string, or return 'N/A' if invalid/zero """
+
+        v = int(val)
+        if v <= 0:
+            return "N/A"
+
+        return "".join(chr((v >> (8 * i)) & 0xFF) for i in range(4))
 
     @staticmethod
     def format_time(seconds: float) -> str:

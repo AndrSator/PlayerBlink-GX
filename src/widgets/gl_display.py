@@ -1,22 +1,25 @@
 import cv2
 
-from PySide6.QtCore import Qt, QRect, QSize
+from PySide6.QtCore import Qt, QRect, QSize, QTimer, QElapsedTimer
 from PySide6.QtGui import QImage, QPainter, QPen, QColor
+from PySide6.QtOpenGL import QOpenGLShader, QOpenGLShaderProgram, \
+    QOpenGLVertexArrayObject
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 
 from ..log import logger
+from ..shaders import load_shader
 
 # Cache Format_BGR888 availability (PySide6 >= 6.2)
 _BGR888 = getattr(QImage.Format, "Format_BGR888", None)
 
+# Hardcoded GL constant — avoids importing PyOpenGL just for one symbol.
+_GL_TRIANGLE_STRIP = 0x0005
+
+_LOADING_SHADER_NAME = "rotom"
+
 
 class GLDisplay(QOpenGLWidget):
-    """ GPU-accelerated video display widget.
-
-    Renders frames as OpenGL textures via QPainter on QOpenGLWidget.
-    Uses INTER_AREA pre-scaling for sharp downscaling.
-
-    """
+    """ GPU-accelerated video display widget """
 
     def __init__(self, parent=None, gpu_scaling=True, smooth=True):
         super().__init__(parent)
@@ -35,6 +38,15 @@ class GLDisplay(QOpenGLWidget):
         # Rendering config
         self._gpu_scaling = gpu_scaling
         self._smooth = smooth
+
+        self._loading = False
+        self._noise_program: QOpenGLShaderProgram | None = None
+        self._noise_vao: QOpenGLVertexArrayObject | None = None
+        self._noise_uniform_time = -1
+        self._loading_elapsed = QElapsedTimer()
+        self._loading_timer = QTimer(self)
+        self._loading_timer.setInterval(16)  # ~60 Hz noise refresh
+        self._loading_timer.timeout.connect(self.update)
 
     # region General API
 
@@ -102,6 +114,25 @@ class GLDisplay(QOpenGLWidget):
         self._text = text
         self.update()
 
+    def set_loading(self, active: bool):
+        """ Toggle the TV-static loading overlay """
+        if self._loading == active:
+            return
+
+        self._loading = active
+
+        if active:
+            # Drop the cached frame so it doesn't peek behind the noise
+            self._qimage = None
+            self._scaled_qimage = None
+            self._text = None
+            self._loading_elapsed.start()
+            self._loading_timer.start()
+        else:
+            self._loading_timer.stop()
+
+        self.update()
+
     # endregion
 
     # region OpenGL rendering
@@ -123,6 +154,44 @@ class GLDisplay(QOpenGLWidget):
             f"  Smooth filter:   {self._smooth}")
         logger.debug(f"[GLDisplay] OpenGL initialized:\n{gl_info}")
 
+        try:
+            self._init_noise_shader()
+        except Exception as e:
+            logger.warning(
+                f"[GLDisplay] Loading shader unavailable: "
+                f"{type(e).__name__}: {e}")
+            self._noise_program = None
+            self._noise_vao = None
+
+    def _init_noise_shader(self):
+        shader = load_shader(_LOADING_SHADER_NAME)
+
+        program = QOpenGLShaderProgram(self)
+
+        if not program.addShaderFromSourceCode(
+                QOpenGLShader.Vertex, shader.vertex):
+            raise RuntimeError(
+                f"vertex shader compile failed: {program.log()}")
+
+        if not program.addShaderFromSourceCode(
+                QOpenGLShader.Fragment, shader.fragment):
+            raise RuntimeError(
+                f"fragment shader compile failed: {program.log()}")
+
+        if not program.link():
+            raise RuntimeError(f"shader link failed: {program.log()}")
+
+        vao = QOpenGLVertexArrayObject(self)
+        if not vao.create():
+            raise RuntimeError("VAO creation failed")
+
+        self._noise_program = program
+        self._noise_vao = vao
+        self._noise_uniform_time = program.uniformLocation("u_time")
+
+        logger.debug(
+            f"[GLDisplay] Loading shader compiled: {shader.name!r}")
+
     def resizeGL(self, _w, _h):
         self._recompute_content_rect()
 
@@ -132,7 +201,9 @@ class GLDisplay(QOpenGLWidget):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(22, 20, 22))
 
-        if self._qimage is not None and not self._content_rect.isEmpty():
+        if self._loading:
+            self._paint_loading_overlay(painter)
+        elif self._qimage is not None and not self._content_rect.isEmpty():
             cr = self._content_rect
 
             if self._scaled_qimage is not None:
@@ -165,6 +236,44 @@ class GLDisplay(QOpenGLWidget):
 
         painter.end()
 
+    def _paint_loading_overlay(self, painter: QPainter):
+        """ Render noise shader """
+        if self._noise_program is None or self._noise_vao is None:
+            return
+
+        target = self._content_rect
+        if target.isEmpty():
+            target = self.rect()
+
+        dpr = self.devicePixelRatioF()
+        widget_h_phys = int(round(self.height() * dpr))
+        x = int(round(target.x() * dpr))
+        y_top = int(round(target.y() * dpr))
+        w = int(round(target.width() * dpr))
+        h = int(round(target.height() * dpr))
+        y_gl = widget_h_phys - (y_top + h)
+
+        if w <= 0 or h <= 0:
+            return
+
+        painter.beginNativePainting()
+        try:
+            gl = self.context().functions()
+            gl.glViewport(x, y_gl, w, h)
+
+            self._noise_program.bind()
+            elapsed_s = self._loading_elapsed.elapsed() / 1000.0
+            self._noise_program.setUniformValue1f(
+                self._noise_uniform_time, float(elapsed_s))
+
+            self._noise_vao.bind()
+            gl.glDrawArrays(_GL_TRIANGLE_STRIP, 0, 4)
+            self._noise_vao.release()
+
+            self._noise_program.release()
+        finally:
+            painter.endNativePainting()
+
     # endregion
 
     def _recompute_content_rect(self):
@@ -186,7 +295,8 @@ class GLDisplay(QOpenGLWidget):
         self._content_rect = QRect(x, y, fit_w, fit_h)
 
     def _prescale(self, bgr_frame, phys_w, phys_h, dpr):
-        """Pre-scale a BGR frame with INTER_AREA at physical resolution."""
+        """ Pre-scale a BGR frame with INTER_AREA at physical resolution """
+
         scaled = cv2.resize(
             bgr_frame, (phys_w, phys_h),
             interpolation=cv2.INTER_AREA)
