@@ -22,6 +22,10 @@ class Constants:
     PKMN_BLINK_INTERVAL_MIN = 3
     PKMN_BLINK_INTERVAL_MAX = 12
     PKMN_BLINK_INTERVAL_OFFSET = 0.285
+    MUNCHLAX_RANGE_MIN = 100
+    MUNCHLAX_RANGE_MAX = 370
+    MUNCHLAX_FRAME_RATE = 30
+    MUNCHLAX_OBSERVATION_DELAY = 0.048  # seconds, corrects eye-tracker lag
     BLINK_BIT_MASK = 0xE  # 0b1110
     BLINK_TYPE_MASK = 0x03  # 0b0011
     MAX_23BIT_INT = (1 << 23) - 1  # 0x7fffff, used to normalize RNG to float
@@ -41,7 +45,7 @@ class Constants:
     # Visuals
     OFFSET_ADVANCES_PREDICTION = 15
     MAX_ADVANCES_HISTORY = 4
-    ICON_DEFAULT_SIZE = 24
+    ICON_DEFAULT_SIZE = 20
     ICON_DEFAULT_SIZE_SMALL = 16
     ICON_DEFAULT_SIZE_BIG = 42
 

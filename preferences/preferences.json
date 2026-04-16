@@ -3,7 +3,7 @@
   "language": "EN",
   "log_level": "DEBUG",
   "calibrated_tick": true,
-  "countdown_ticks": 6,
+  "countdown_ticks": 10,
   "advanced": {
     "opencv": {
       "width": 1920,

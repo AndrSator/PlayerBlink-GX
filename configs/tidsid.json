@@ -1,7 +1,7 @@
 {
     "name": "TID/SID",
     "description": "Used to track Rowan's Munchlax blinks eye and get Trainer ID and Secret ID.",
-    "image": "eye.png",
+    "image": "munchlax.png",
     "roi": [
         727,
         671,

@@ -50,6 +50,11 @@ class Controller:
         self._reidentifying = False
         self._reident_noisy = False
         self._tracking_tidsid = False
+        self._pokemon_blink_mode = False
+
+        # Independent model used only to preview combobox selection
+        # without touching the active loaded config (cfm)
+        self._preview_cfm = ConfigModel()
 
         self._setup_signals()
         self._link_buttons()
@@ -70,6 +75,8 @@ class Controller:
         am.countdown_tick.connect(self._on_countdown_tick)
         am.countdown_finished.connect(self._on_countdown_finished)
         am.auto_start_countdown.connect(self.handle_countdown)
+        am.delay2_countdown_started.connect(self._on_delay2_started)
+        am.delay2_countdown_finished.connect(self._on_delay2_finished)
 
         # EyeTracker
         et.blink_detected.connect(self.on_blink_detected)
@@ -100,6 +107,7 @@ class Controller:
         m.switch_tracking_tidsid.clicked.connect(self.tracking_munchlax)
         m.btn_reidentify.clicked.connect(self.reidentify)
         m.btn_stop_timeline.clicked.connect(am.stop_simulating)
+        m.btn_copy_timeline_adv.clicked.connect(am.copy_curr_adv)
 
         # Advance calibration labels
         m.spin_advance_target.valueChanged.connect(
@@ -142,9 +150,10 @@ class Controller:
         # Eye Manager
         m.btn_create_resource.clicked.connect(self.create_eye_resource)
         m.btn_delete_resource.clicked.connect(self.delete_eye_resource)
+        m.slider_threshold.valueChanged.connect(self._on_threshold_changed)
 
         # Config tab
-        m.cmb_config.currentIndexChanged.connect(self._on_config_selected)
+        m.cmb_config.currentIndexChanged.connect(self._on_config_preview)
         m.btn_create_config.clicked.connect(self.create_config)
         m.btn_save_config.clicked.connect(self.save_config)
         m.btn_load_config.clicked.connect(self.apply_config)
@@ -169,11 +178,21 @@ class Controller:
         tvw.patch_single_item_combo()
 
         # Debug
-        m.btn_generate_blinks.clicked.connect(self.debug_generate_blinks)
+        m.btn_generate_blinks.clicked.connect(
+            self.debug_generate_blinks)
+        m.btn_generate_blinks_munchlax.clicked.connect(
+            self.debug_generate_blinks_munchlax)
 
     def _on_reident_range_changed(self, values):
         am.min_reident = int(values[0])
         am.max_reident = int(values[1])
+
+    def _on_threshold_changed(self, raw_value):
+        # Mirror Menu's snap so we only push the snapped re-emit
+        stepped = round(raw_value / 5) * 5
+        if stepped != raw_value or stepped <= 0:
+            return
+        et.threshold = stepped * 0.01
 
     # Capture toggle
     def toggle_capture(self):
@@ -298,7 +317,7 @@ class Controller:
 
         # Countdown only available when simulation is running
         m.btn_start_countdown.setEnabled(am.is_running())
-
+        
     # endregion
 
     # region EyeTracker
@@ -307,6 +326,7 @@ class Controller:
             et.stop()
             self._tracking_tidsid = False
             self._reidentifying = False
+            self._pokemon_blink_mode = False
         else:
             et.size = Const.BLINKS_REQUIRED_TRACKING
             m.set_tracking_progress(0, Const.BLINKS_REQUIRED_TRACKING)
@@ -318,10 +338,12 @@ class Controller:
         if et.is_tracking():
             et.stop()
             self._tracking_tidsid = False
+            self._pokemon_blink_mode = False
             self._sync_tracking_ui()
             return
 
         self._tracking_tidsid = True
+        self._pokemon_blink_mode = True
         size = Const.BLINKS_REQUIRED_TRACKING_TIDSID
         m.set_tracking_progress(0, size)
         et.size = size
@@ -334,6 +356,7 @@ class Controller:
             logger.debug("[Controller] No seed to reidentify from")
             return
 
+        self._pokemon_blink_mode = False
         am.stop_simulating()
 
         if et.is_active():
@@ -481,9 +504,11 @@ class Controller:
         # Auto-calibrate tick rate from observed blink timing
         if am.auto_calibrate and et.calibrated_tick is not None:
             am.tick_rate = et.calibrated_tick
+            am.tick_rate_se = et.calibrated_se
             logger.debug(
                 f"[CALIBRATION] tick_rate={am.tick_rate:.6f}s "
-                f"(default={Const.FRAME_CORRECTION}, "
+                f"(SE={am.tick_rate_se:.6f}, "
+                f"default={Const.FRAME_CORRECTION}, "
                 f"delta={am.tick_rate - Const.FRAME_CORRECTION:+.6f}s)")
 
         # Compensate elapsed time BEFORE displaying seed
@@ -526,7 +551,8 @@ class Controller:
             calc = Calc()
 
             # Correct for observation delay and skip first interval
-            corrected = [iv + 0.048 for iv in raw_intervals]
+            corrected = [iv + Const.MUNCHLAX_OBSERVATION_DELAY
+                         for iv in raw_intervals]
             corrected = corrected[1:]
 
             states = calc.reverse_states_by_munchlax(corrected)
@@ -534,7 +560,9 @@ class Controller:
             # Validation: compare expected vs observed intervals
             prng = Xorshift(*states)
             expected = [
-                calc.randrange(r, 100, 370) / 30
+                calc.randrange(r, Const.MUNCHLAX_RANGE_MIN,
+                               Const.MUNCHLAX_RANGE_MAX)
+                / Const.MUNCHLAX_FRAME_RATE
                 for r in prng.get_next_rand_sequence(advances)
             ]
             paired = list(zip(corrected, expected))
@@ -578,7 +606,13 @@ class Controller:
 
         logger.debug(
             f"[TIMING tidsid] advances_before_tick={am.advances}")
-        am.start_tick_loop(anchor)
+
+        # Munchlax/pokemon-only: use timeline loop (random intervals)
+        # Regular tick loop uses fixed 1.018s which is wrong here
+        if am.npc_pkmn_count > 0:
+            am.start_timeline_loop(anchor)
+        else:
+            am.start_tick_loop(anchor)
         self._sync_eye_controls()
 
     def _handle_reidentify(self, intervals, offset_time):
@@ -616,6 +650,11 @@ class Controller:
         except Exception as e:
             logger.error(f"[Controller] Reidentification error: {e}")
             return
+
+        # Refine tick rate with new blink data (inverse-variance weighted)
+        if am.auto_calibrate and et.calibrated_tick is not None:
+            if et.calibrated_se is not None and et.calibrated_se > 0:
+                am.refine_tick_rate(et.calibrated_tick, et.calibrated_se)
 
         # Compensate elapsed time BEFORE displaying seed.
         # Reidentify counts elapsed advances (legacy behaviour)
@@ -670,8 +709,15 @@ class Controller:
 
         logger.info(f"{rng:08X}| Advance: {advances}{blink_str}{npc_str}")
 
+        # Pokemon blink mode (TID/SID): every advance is a pokemon blink,
+        # so showing blink icons is redundant — hide them
+        if self._pokemon_blink_mode:
+            blink_type = None
+            predictions = [
+                (adv, val, None) for adv, val, _ in predictions
+            ]
         # When NPCs configured, show NPC[0] blink only; otherwise player
-        if am.npc_count > 0:
+        elif am.npc_count > 0:
             blink_type = None
             if npc_blinks and npc_blinks[0][0] == 0:
                 blink_type = npc_blinks[0][1]
@@ -825,14 +871,33 @@ class Controller:
             lbl_timeline_visible and
             final_a_press_visible and
             timeline_buffer >= final_a_press_value + prefs.countdown_ticks)
+        # m.lbl_timeline_start.setVisible(lbl_visibles)
+        # m.lbl_press_a.setVisible(lbl_visibles)
 
-        m.lbl_timeline_start.setText(str(m._countdown_start_at_adv))
-        m.lbl_press_a.setText(str(m._final_a_press_adv))
+        lbl_timeline_start_txt = str(m._countdown_start_at_adv) \
+            if lbl_visibles else ""
+        lbl_press_a_txt = str(m._final_a_press_adv) \
+            if lbl_visibles else ""
 
-        m.lbl_timeline_start.setVisible(lbl_visibles)
-        m.lbl_press_a.setVisible(lbl_visibles)
+        m.lbl_timeline_start.setText(lbl_timeline_start_txt)
+        m.lbl_press_a.setText(lbl_press_a_txt)
 
         am.countdown_auto_start_adv = m._countdown_start_at_adv
+
+        # Second timer markers (advance_delay_2)
+        if am.advance_delay_2 > 0 and final_a_press_value > 0:
+            step = 1 + am.npc_count
+            cd_end_adv = (m._countdown_start_at_adv
+                          + prefs.countdown_ticks * step)
+            plus_menu = 1 if am.inc_one_on_close else 0
+            post_cd = 1 + plus_menu + am.advance_delay + am.npc_pkmn_count
+            delay2_events = min(10, prefs.countdown_ticks)
+
+            m._delay2_start_at_adv = cd_end_adv + post_cd
+            m._delay2_a_press_adv = m._delay2_start_at_adv + delay2_events
+        else:
+            m._delay2_start_at_adv = -1
+            m._delay2_a_press_adv = -1
 
         self._check_advance_is_targetable()
         self._update_adv_trgt_eta_label()
@@ -877,7 +942,8 @@ class Controller:
             return
 
         remaining = trgt - am.advances
-        eta_seconds = remaining * am.tick_rate
+        advances_per_tick = 1 + am.npc_count
+        eta_seconds = remaining / advances_per_tick * am.tick_rate
         m.lbl_adv_trgt_eta.setText(Utils.format_time(eta_seconds))
 
     def handle_countdown(self):
@@ -886,7 +952,10 @@ class Controller:
             return
 
         total = pref.countdown_ticks
-        logger.info(f"[Controller] Starting countdown: {total} game ticks")
+        step = 1 + am.npc_count
+        m._countdown_end_at_adv = am.advances + total * step
+        logger.info(f"[Controller] Starting countdown: {total} game ticks, "
+                    f"ends at advance {m._countdown_end_at_adv}")
         m.start_countdown(total)
         am.start_countdown(total)
 
@@ -900,33 +969,30 @@ class Controller:
         m.stop_countdown()
         m.init_timeline(advances, 0, predictions)
 
+    def _on_delay2_started(self, total):
+        # In timeline loop each event = 1 advance
+        m._countdown_end_at_adv = am.advances + total
+        logger.info(f"[Controller] Delay2 countdown started: {total} events, "
+                    f"ends at advance {m._countdown_end_at_adv}")
+        m.start_countdown(total)
+
+    def _on_delay2_finished(self):
+        logger.info("[Controller] Delay2 countdown finished")
+        m.stop_countdown()
+
     # endregion
 
     # region Config Management
 
     def _populate_configs(self):
         configs = cfm.list_configs()
-        m.cmb_config.blockSignals(True)
         m.cmb_config.clear()
 
         for filename in configs:
             display_name = cfm.peek_name(filename)
             m.cmb_config.addItem(display_name, userData=filename)
 
-        m.cmb_config.blockSignals(False)
-
-        if configs:
-            m.cmb_config.setCurrentIndex(0)
-            cfm.load(configs[0])
-
         self._sync_config_controls()
-
-    def _on_config_selected(self, index):
-        if index < 0:
-            return
-        filename = m.cmb_config.currentData()
-        if filename:
-            cfm.load(filename)
 
     def _on_config_loaded(self, cfg):
         m.display_config(cfg)
@@ -934,11 +1000,24 @@ class Controller:
         m.display_config_image(image_path)
         self._sync_config_controls()
 
+    def _on_config_preview(self, _index):
+        self._sync_config_controls()
+
+        filename = m.cmb_config.currentData()
+        if not filename:
+            return
+
+        if not self._preview_cfm.load(filename):
+            return
+
+        m.display_config(self._preview_cfm)
+        m.display_config_image(Const.EYES_DIR / self._preview_cfm.image)
+
     def _sync_config_controls(self):
         busy = et.is_tracking() or et.is_preview()
-        has_config = cfm.current_file is not None
-        m.btn_load_config.setEnabled(has_config and not busy)
-        m.btn_save_config.setEnabled(has_config)
+        has_selection = m.cmb_config.currentIndex() >= 0
+        m.btn_load_config.setEnabled(has_selection and not busy)
+        m.btn_save_config.setEnabled(not busy)
 
     def create_config(self):
         dialog = FileNameDialog(m)
@@ -961,10 +1040,28 @@ class Controller:
             cfm.load(filename)
 
     def save_config(self):
+        # No active loaded config: prompt for a new name and create the file
+        # so we never silently overwrite the loaded one with default values
         if cfm.current_file is None:
-            return
+            dialog = FileNameDialog(m)
+            if dialog.exec() != QDialog.Accepted:
+                return
+
+            name = dialog.get_name()
+            if not name:
+                return
+
+            filename = cfm.create(name)
+            if not filename:
+                return
+
+            m.cmb_config.blockSignals(True)
+            m.cmb_config.addItem(name, userData=filename)
+            m.cmb_config.setCurrentIndex(m.cmb_config.count() - 1)
+            m.cmb_config.blockSignals(False)
 
         # Read current values from UI controls into the model
+        cfm.description = m.txt_config_description.toPlainText()
         cfm.plus_one_menu_close = m.chkb_plus_one_menu_close.isChecked()
         cfm.final_a_press_delay = m.spin_final_a_press_delay.value()
         cfm.timeline_buffer = m.spin_timeline_buffer.value()
@@ -987,15 +1084,21 @@ class Controller:
         # Refresh preview labels and image
         m.display_config(cfm)
         m.display_config_image(Const.EYES_DIR / cfm.image)
+        self._sync_config_controls()
         logger.info(f"[Controller] Config saved: {cfm.current_file}")
 
     def apply_config(self):
-        if cfm.current_file is None:
+        filename = m.cmb_config.currentData()
+        if not filename:
+            logger.debug("[Controller] No config selected to load")
             return
 
         if et.is_tracking() or et.is_preview():
             logger.warning(
                 "[Controller] Cannot load config while tracking is active")
+            return
+
+        if not cfm.load(filename):
             return
 
         # Apply config values to UI controls and logic
@@ -1013,7 +1116,9 @@ class Controller:
         m.spin_pkmn_npcs_countdown.setValue(cfm.pkmn_npc)
         m.spin_npcs_countdown.setValue(cfm.timeline_npc)
 
-        # Threshold
+        # Threshold (slider drives et via _on_threshold_changed; set both
+        # so an exact unsnapped value isn't lost to slider snapping)
+        m.slider_threshold.setValue(round(cfm.threshold * 100))
         et.threshold = cfm.threshold
 
         # ROI / tracking area
@@ -1044,6 +1149,45 @@ class Controller:
 
         et.tracking_finished.emit(
             blinks, intervals, offset_time, None, time.perf_counter())
+
+    def debug_generate_blinks_munchlax(self):
+        import random
+
+        logger.debug("[Debug] Generating debug munchlax blinks")
+        self._tracking_tidsid = True
+        self._pokemon_blink_mode = True
+
+        # Munchlax scene: 1 pokemon NPC, no human NPCs in timeline
+        am.npc_count = 0
+        am.npc_pkmn_count = 1
+        am.npc_in_timeline = -1
+        m.spin_npcs.setValue(0)
+        m.spin_pkmn_npcs_countdown.setValue(1)
+        m.spin_npcs_countdown.setValue(-1)
+
+        calc = Calc()
+        seed = [random.getrandbits(32) for _ in range(4)]
+        prng = Xorshift(*seed)
+        size = Const.BLINKS_REQUIRED_TRACKING_TIDSID
+
+        # Produce synthetic munchlax intervals, subtract observation
+        # delay because _handle_identify_tidsid adds it back
+        rng_seq = prng.get_next_rand_sequence(size)
+        raw_intervals = [
+            calc.randrange(r, Const.MUNCHLAX_RANGE_MIN,
+                           Const.MUNCHLAX_RANGE_MAX)
+            / Const.MUNCHLAX_FRAME_RATE
+            - Const.MUNCHLAX_OBSERVATION_DELAY
+            for r in rng_seq
+        ]
+        # Blink values for logging (every munchlax RNG call is a blink)
+        blinks = [r & 0xF for r in rng_seq]
+
+        # Use current time as offset (no real tracking delay in debug)
+        offset_time = time.perf_counter()
+
+        et.tracking_finished.emit(
+            blinks, [], raw_intervals, offset_time, time.perf_counter())
 
     # endregion
 

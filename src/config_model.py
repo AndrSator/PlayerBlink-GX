@@ -204,8 +204,8 @@ class ConfigModel(QObject):
 
     @timeline_npc.setter
     def timeline_npc(self, value):
-        if not isinstance(value, (int, float)) or value < 0:
-            raise ValueError(f"timeline_npc must be >= 0, got {value!r}")
+        if not isinstance(value, (int, float)) or value < -1:
+            raise ValueError(f"timeline_npc must be >= -1, got {value!r}")
         self._timeline_npc = int(value)
 
     # endregion
@@ -235,7 +235,7 @@ class ConfigModel(QObject):
     def load(self, filename):
         """Load a config file by filename and populate properties."""
         filepath = self._configs_dir / filename
-        logger.info(f"[ConfigModel] Loading config: {filepath}")
+        logger.debug(f"[ConfigModel] Loading config: {filepath}")
 
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -267,7 +267,7 @@ class ConfigModel(QObject):
 
         self._current_file = filename
         self.config_loaded.emit(self)
-        logger.info(f"[ConfigModel] Config loaded: {self._name}")
+        logger.debug(f"[ConfigModel] Config loaded: {self._name}")
         return True
 
     def save(self, filename=None):

@@ -14,7 +14,7 @@ from ..preferences import Preferences as Prefs
 from ..ui.tv_ui import Ui_tv_view
 
 
-ICONS = {
+_ICONS = {
     "switch_capture": {
         "icon": ["videocam.svg", "videocam_off.svg"],
         "tooltip_id": ["start_capture", "stop_capture"],
@@ -636,16 +636,16 @@ class TvWindow(CWindow):
         btn.style().polish(btn)
 
     def _refresh_icon(self, btn_name):
-        refresh_icon(self, btn_name, ICONS, Const.ICONS_DIR,
+        refresh_icon(self, btn_name, _ICONS, Const.ICONS_DIR,
                      Const.ICON_DEFAULT_SIZE)
 
     def _set_switch_icon(self, btn_name, icon_index):
-        set_switch_icon(self, btn_name, ICONS, Const.ICONS_DIR,
+        set_switch_icon(self, btn_name, _ICONS, Const.ICONS_DIR,
                         icon_index, Const.ICON_DEFAULT_SIZE)
 
     def _setup_icons(self):
         super()._setup_icons()
-        setup_icons(self, ICONS, Const.ICONS_DIR, Const.ICON_DEFAULT_SIZE)
+        setup_icons(self, _ICONS, Const.ICONS_DIR, Const.ICON_DEFAULT_SIZE)
 
     def update_buttons_visibility(self):
         self.set_devices_controls_visibility(not self._monitor_mode)

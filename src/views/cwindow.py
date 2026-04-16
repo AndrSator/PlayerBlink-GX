@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QWidget, QPushButton, QApplication
+from PySide6.QtWidgets import QWidget, QPushButton, QApplication, QCheckBox
 from PySide6.QtCore import Qt, QEvent
 
 from .icon_utils import setup_icons
 from ..constants import Constants as Const
 from ..ui.cwindow_ui import Ui_CustomWindow
+from ..widgets.ctoggle_switch import CToggleSwitch
 
 
 _BORDER_MARGIN = 5
@@ -71,6 +72,19 @@ class CWindow(QWidget, Ui_CustomWindow):
     def _setup_icons(self):
         setup_icons(self, _ICONS, self._icons_path,
                     Const.ICON_DEFAULT_SIZE_SMALL)
+
+    def _replace_checkboxes_with_switches(self, ui):
+        for name, old in list(vars(ui).items()):
+            if not isinstance(old, QCheckBox):
+                continue
+
+            switch = CToggleSwitch(old.text(), old.parentWidget())
+            switch.setObjectName(old.objectName())
+            switch.setChecked(old.isChecked())
+
+            old.parentWidget().layout().replaceWidget(old, switch)
+            old.deleteLater()
+            setattr(ui, name, switch)
 
     def toggle_always_on_top(self):
         self._on_top = not self._on_top

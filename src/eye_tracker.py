@@ -56,6 +56,7 @@ class EyeTracker(QObject):
         self._running = False
 
         self._calibrated_tick = None  # measured tick rate from last tracking
+        self._calibrated_se = None    # standard error of the measurement
 
     # region Properties
     @property
@@ -119,6 +120,10 @@ class EyeTracker(QObject):
     @property
     def calibrated_tick(self):
         return self._calibrated_tick
+
+    @property
+    def calibrated_se(self):
+        return self._calibrated_se
 
     @property
     def img_pattern_sample(self):
@@ -372,6 +377,7 @@ class EyeTracker(QObject):
                 intervals, blink_times)
             if tick_rate is not None:
                 self._calibrated_tick = tick_rate
+                self._calibrated_se = se_tick
                 logger.info(
                     f"[EyeTracker] Calibrated tick_rate="
                     f"{tick_rate * 1000:.3f}ms/tick "

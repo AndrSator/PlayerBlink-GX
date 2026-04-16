@@ -1,15 +1,38 @@
-QWidget {
-    color: {text};
+#CustomWindow {
     background-color: {background};
-    font-family: "Noto Sans";
-    font-size: 14pt;
 }
 
-QPushButton, QComboBox, QSpinBox, QDoubleSpinBox {
+QWidget {
+    color: {text};
+    font-family: "Inter";
+    font-weight: 400;
+    font-size: 11pt;
+}
+
+QFrame[isLine="true"] {
+    margin: 4px 0;
+}
+
+QLabel {
+    margin-bottom: 0.1em;
+}
+
+QLabel[title="true"] {
+    font-weight: 800;
+    font-size: 14pt;
+    min-height: 20px;
+    margin-bottom: 0.5em;
+}
+
+QPushButton, QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox {
     color: {text};
     selection-color: {primary};
-    background-color: {surface};
-    selection-background-color: transparent;
+    background-color: {surfaceVariant};
+    selection-background-color: transparent;  
+}
+
+QGroupBox QPushButton {
+    background-color: {surfaceLight};
 }
 
 /*
@@ -51,16 +74,15 @@ QPushButton[active="true"]:pressed {
 
 QPushButton:disabled, QComboBox:disabled {
     color: {surfaceLight};
-    background-color: {backgroundVariant};
+    background-color: {surfaceVariant};
 }
 
 QPushButton[class="seedValue"] {
     color: {text};
     background-color: {surface};
     font-family: "Space Mono";
-    font-size: 9pt;
+    font-size: 11pt;
     text-align: center;
-    min-height: 15px;
 }
 
 QPushButton#danger {
@@ -110,7 +132,7 @@ QScrollBar:vertical {
 }
 
 QScrollBar::handle:vertical {
-    background-color: {surface};
+    background-color: {surfaceLight};
     min-height: 20px;
 }
 
@@ -128,18 +150,18 @@ QScrollBar::sub-page:vertical {
     background: none;
 }
 
-QGroupBox {
+QGroupBox, _FlowContainer {
     background-color: {surface};
-    border-radius: 10px;
+    border-radius: 4px;
 }
 
 LinearProgress, CircularProgress {
     qproperty-activeColor: {primary};
-    qproperty-inactiveColor: {surfaceLight};
+    qproperty-inactiveColor: {surfaceVariant};
     qproperty-labelColor: {text};
 }
 
-QTabWidget::pane, QScrollArea, #scrollAreaWidgetContents {
+QTabWidget::pane, #scrollAreaWidgetContents {
     background-color: transparent;
     border: none;
 }
@@ -148,10 +170,13 @@ GalleryItem {
     background-color: transparent;
     border: 1px solid {surfaceLight};
     border-radius: 4px;
+    qproperty-borderRadius: 4;
+    qproperty-selBorderWidth: 4;
+    qproperty-selBorderColor: {primary};
 }
 
 GalleryItem[selected="true"] {
-    border: 4px solid {primary};
+    border: 1px solid {surfaceLight};
     border-radius: 4px;
 }
 
@@ -162,16 +187,9 @@ QTabBar::tab {
     padding: 0;
 }
 
-QLabel[title="true"] {
-    color: {text};
-    font-weight: 400;
-    font-size: 16pt;
-    padding-left: 0.25em;
-    padding-bottom: 0.2em;
-}
-
 QRangeSlider {
     qproperty-barColor: {surfaceLight};
+    background: transparent;
     height: 20px;
     margin: 0;
     padding: 0;
@@ -179,26 +197,49 @@ QRangeSlider {
 
 QSlider::groove:horizontal {
     border: 0px;
-    height: 4px;
+    height: 2px;
     background: {backgroundVariant};
     margin: 2px 0;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 
 QSlider::handle:horizontal {
-    background-color: {surface};
+    background-color: {surfaceLight};
     border: 0px;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     margin: -7px 0;
-    border-radius: 9px;
+    border-radius: 8px;
 }
 
 QSlider::handle:horizontal:hover {
-    background: {surfaceLight};
+    background: {primary};
 }
 
 QSpinBox[error="true"] {
     color: {error};
     selection-color: {error};
+}
+
+CToggleSwitch {
+    qproperty-onColor: {primary};
+    qproperty-handleColor: {text};
+    qproperty-offColor: {textVariant};
+    min-height: 25px;
+}
+
+GalleryContainer {
+    background-color: transparent;
+    margin: 20px;
+}
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QScrollArea > QWidget { /* viewport */
+    background: transparent;
+    border: none;
+    
 }

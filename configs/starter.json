@@ -1,0 +1,21 @@
+{
+    "name": "Starter",
+    "description": "Config to reidentify using Barry's blinks.",
+    "image": "barry.png",
+    "roi": [
+        154,
+        167,
+        511,
+        487
+    ],
+    "plus_one_menu_close": true,
+    "final_a_press_delay": 65,
+    "timeline_buffer": 200,
+    "threshold": 0.9,
+    "time_delay": 0.0,
+    "advance_delay": 41,
+    "advance_delay_2": 48,
+    "npc": 1,
+    "pkmn_npc": 2,
+    "timeline_npc": -1
+}

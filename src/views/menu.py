@@ -1,11 +1,11 @@
 from enum import Enum
 
-from PySide6.QtWidgets import QApplication, QSizePolicy, QGraphicsScene
+from PySide6.QtWidgets import QSizePolicy, QGraphicsScene
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent
 from PySide6.QtGui import QPixmap
 
+from ..utils import Utils
 from ..eye_tracker import BlinkType
-from ..preferences import Preferences
 from ..constants import Constants as Const
 
 from ..widgets.cadvance_label import AdvanceLabel
@@ -13,7 +13,7 @@ from ..widgets.cprogress import LinearProgress, CircularProgress
 from ..widgets.cgallery import GalleryContainer
 
 from .cwindow import CWindow
-from .icon_utils import setup_icons
+from .icon_utils import setup_icons, set_switch_icon
 from ..ui.menu_ui import Ui_menu_view
 
 
@@ -25,11 +25,10 @@ _TABS = {
     "DEBUG": 4
 }
 
-
 _ICONS = {
     # Tabs
     "btn_eye_manager": {
-        "icon": "photo_library.svg",
+        "icon": "folder_eye.svg",
     },
     "btn_configs": {
         "icon": "library_books.svg",
@@ -42,7 +41,7 @@ _ICONS = {
     },
     # Other buttons
     "switch_tracking": {
-        "icon": "mystery.svg",
+        "icon": ["mystery.svg", "cancel.svg"],
         "size": Const.ICON_DEFAULT_SIZE_BIG
     },
     "switch_tracking_tidsid": {
@@ -67,9 +66,23 @@ _ICONS = {
     "btn_delete_resource": {
         "icon": "delete.svg",
     },
+    "btn_stop_timeline": {
+        "icon": "stop.svg",
+        "size": Const.ICON_DEFAULT_SIZE_SMALL
+    },
+    "btn_copy_timeline_adv": {
+        "icon": "copy.svg",
+        "size": Const.ICON_DEFAULT_SIZE_SMALL
+    },
     # Config tab
     "btn_save_config": {
         "icon": "save.svg",
+    },
+    "btn_create_config": {
+        "icon": "add.svg",
+    },
+    "btn_load_config": {
+        "icon": "check.svg",
     },
 }
 
@@ -98,6 +111,9 @@ class Menu(CWindow):
         self._countdown_active = False
         self._countdown_start_at_adv = -1
         self._final_a_press_adv = -1
+        self._delay2_start_at_adv = -1
+        self._delay2_a_press_adv = -1
+        self._countdown_end_at_adv = -1
 
         self._icons_path = Const.ICONS_DIR
 
@@ -123,6 +139,7 @@ class Menu(CWindow):
 
         self._replace_placeholders()
         self._setup_superqt_widgets()
+        self._replace_checkboxes_with_switches(self._menu_ui)
         self._link_buttons()
         self.set_seed_display_mode()
         self.sync_tracking_state(tracking=False, preview=False)
@@ -208,8 +225,8 @@ class Menu(CWindow):
             btn.clicked.connect(self.handle_copy_clicked)
 
         self.switch_seed_display.clicked.connect(self.toggle_seed_display)
-
-        # TODO - wire thresholds slider/spin
+        self.slider_threshold.valueChanged.connect(
+            self._update_threholds)
 
         # Eye Manager Tab
         # TODO - buttons from this tabs
@@ -312,6 +329,10 @@ class Menu(CWindow):
         return self._menu_ui.btn_stop_timeline
 
     @property
+    def btn_copy_timeline_adv(self):
+        return self._menu_ui.btn_copy_timeline_adv
+
+    @property
     def chkb_plus_one_menu_close(self):
         return self._menu_ui.chkb_plus_one_menu_close
 
@@ -380,6 +401,14 @@ class Menu(CWindow):
     @property
     def lbl_adv_trgt_eta(self):
         return self._menu_ui.lbl_adv_trgt_eta
+
+    @property
+    def slider_threshold(self):
+        return self._menu_ui.slider_threshold
+
+    @property
+    def lbl_threshold_value(self):
+        return self._menu_ui.lbl_threshold_value
 
     @property
     def eye_gallery(self):
@@ -483,6 +512,10 @@ class Menu(CWindow):
     def btn_generate_blinks(self):
         return self._menu_ui.btn_generate_blinks
 
+    @property
+    def btn_generate_blinks_munchlax(self):
+        return self._menu_ui.btn_generate_blinks_munchlax
+
     # endregion
 
     def _switch_to_tab(self, tab_name):
@@ -538,9 +571,8 @@ class Menu(CWindow):
         self.switch_tracking_tidsid.setVisible(not tracking)
         self.btn_reidentify.setVisible(not tracking)
 
-        # self.switch_tracking.setText(
-        #     "STOP" if tracking else "MONITOR BLINKS")
-        # TODO - Change icon according
+        set_switch_icon(self, "switch_tracking", _ICONS, self._icons_path,
+                        1 if tracking else 0, Const.ICON_DEFAULT_SIZE_BIG)
         self.switch_preview_tracking.setText(
             "STOP" if preview else "PREVIEW")
 
@@ -564,7 +596,7 @@ class Menu(CWindow):
 
     def handle_copy_clicked(self):
         btn = self.sender()
-        self.copy_content_to_clipboard(btn.text())
+        Utils.copy_content_to_clipboard(btn.text())
 
     def start_countdown(self, total_ticks):
         self._countdown_active = True
@@ -580,12 +612,9 @@ class Menu(CWindow):
     def stop_countdown(self):
         stop = True
         self._countdown_active = not stop
+        self._countdown_end_at_adv = -1
         self._countdown_widget.setVisible(not stop)
         self.btn_start_countdown.setEnabled(stop)
-
-    def copy_content_to_clipboard(self, text):
-        clipboard = QApplication.clipboard()
-        clipboard.setText(text)
 
     def display_seed(self, seed_4x32, seed_2x64):
         self.btn_4bytes_seed_0.setText(seed_4x32[0])
@@ -595,6 +624,18 @@ class Menu(CWindow):
 
         self.btn_8bytes_s0.setText(seed_2x64[0])
         self.btn_8bytes_s1.setText(seed_2x64[1])
+
+    def _update_threholds(self):
+        raw_value = self.slider_threshold.value()
+
+        stepped_value = round(raw_value / 5) * 5
+        if stepped_value != raw_value:
+            self.slider_threshold.setValue(stepped_value)
+            return
+
+        value = stepped_value * 0.01
+        text = f"{value:.2f}".rstrip('0').rstrip('.')
+        self.lbl_threshold_value.setText(text)
 
     # region Advance timeline
     def _recycle_label(self, label):
@@ -702,18 +743,21 @@ class Menu(CWindow):
         self._scroll_to_current(trimmed_height)
 
     def _get_adv_type(self, adv):
-        prefs = Preferences()
-
         target = self.spin_advance_target.value()
-        countdown_finished_at = (
-            self._countdown_start_at_adv +
-            prefs.countdown_ticks
-        )
 
-        if (adv == target or
-            adv == self._final_a_press_adv or
-                adv == countdown_finished_at):
+        if adv == target:
             return TimelineEntry.TARGET
+
+        # Countdown end marker (only while a countdown is running)
+        if self._countdown_active and adv == self._countdown_end_at_adv:
+            return TimelineEntry.TARGET
+
+        # Static calibration markers (always visible when configured)
+        if self._countdown_start_at_adv > 0:
+            if (adv == self._final_a_press_adv or
+                    adv == self._delay2_start_at_adv or
+                    adv == self._delay2_a_press_adv):
+                return TimelineEntry.TARGET
 
         return TimelineEntry.PREDICTED
 
@@ -722,11 +766,18 @@ class Menu(CWindow):
         blink_type_icon = blink_type.value if isinstance(
             blink_type, BlinkType) else None
 
-        # Timer icon
-        has_timer_icon = advance == self._countdown_start_at_adv or \
-            advance == self._final_a_press_adv
-        timer_icon = 1 if advance == self._final_a_press_adv else 0
-        timer_icon = timer_icon if has_timer_icon else None
+        # Timer icon (only when countdown is configured)
+        timer_icon = None
+        if (self._countdown_active
+                and advance == self._countdown_end_at_adv):
+            timer_icon = 1
+        elif self._countdown_start_at_adv > 0:
+            if advance in (self._final_a_press_adv,
+                           self._delay2_a_press_adv):
+                timer_icon = 1
+            elif advance in (self._countdown_start_at_adv,
+                             self._delay2_start_at_adv):
+                timer_icon = 0
 
         lbl = self._acquire_label(
             advance, state, blink_type_icon, timer_icon)

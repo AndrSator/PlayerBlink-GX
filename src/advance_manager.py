@@ -22,6 +22,8 @@ class AdvanceManager(QObject):
     countdown_tick = Signal(int)              # remaining ticks
     countdown_finished = Signal(int, list)    # advances, predictions
     auto_start_countdown = Signal()           # countdown auto start
+    delay2_countdown_started = Signal(int)    # delay2 total events
+    delay2_countdown_finished = Signal()      # delay2 applied
 
     def __init__(self):
         super().__init__()
@@ -46,10 +48,12 @@ class AdvanceManager(QObject):
 
         # Timeline
         self._simulating = False
+        self._in_timeline = False
         self._npc_in_timeline = 0
 
         # Tick rate (configurable, overridden by calibration)
         self._tick_rate = Const.FRAME_CORRECTION
+        self._tick_rate_se = None  # standard error of current calibration
         self._auto_calibrate = True
 
         # Tick loop thread
@@ -175,6 +179,41 @@ class AdvanceManager(QObject):
         self._tick_rate = value
 
     @property
+    def tick_rate_se(self):
+        return self._tick_rate_se
+
+    @tick_rate_se.setter
+    def tick_rate_se(self, value):
+        self._tick_rate_se = value
+
+    def refine_tick_rate(self, new_rate, new_se):
+        """Combine a new tick rate measurement with the existing one
+        using inverse-variance weighting. Produces a more accurate
+        estimate than either measurement alone."""
+        if self._tick_rate_se is None or self._tick_rate_se <= 0:
+            # No prior calibration, just adopt the new one
+            self._tick_rate = new_rate
+            self._tick_rate_se = new_se
+            return
+
+        w_old = 1.0 / (self._tick_rate_se ** 2)
+        w_new = 1.0 / (new_se ** 2)
+        w_total = w_old + w_new
+
+        combined_rate = (w_old * self._tick_rate
+                         + w_new * new_rate) / w_total
+        combined_se = (1.0 / w_total) ** 0.5
+
+        logger.debug(
+            f"[CALIBRATION] Refine: old={self._tick_rate:.6f}s "
+            f"(SE={self._tick_rate_se:.6f}), "
+            f"new={new_rate:.6f}s (SE={new_se:.6f}) -> "
+            f"combined={combined_rate:.6f}s (SE={combined_se:.6f})")
+
+        self._tick_rate = combined_rate
+        self._tick_rate_se = combined_se
+
+    @property
     def auto_calibrate(self):
         return self._auto_calibrate
 
@@ -256,8 +295,13 @@ class AdvanceManager(QObject):
             self._tick_thread = None
 
         self._simulating = False
+        self._in_timeline = False
         self._countdown_active = False
         self._delay2_pending = False
+
+    def copy_curr_adv(self):
+        text = str(self._advances)
+        Utils.copy_content_to_clipboard(text)
 
     def start_countdown(self, duration_ticks=None):
         """ Start a countdown that decrements once per game tick.
@@ -310,11 +354,12 @@ class AdvanceManager(QObject):
 
         self._advances += extra
 
-        # Schedule advance_delay_2 to fire after 10 more game ticks
-        # (mirrors original: count_down resets to 10 inside event loop)
+        # Schedule advance_delay_2 to fire after 10 heapq events
+        # (mirrors original: count_down = 10). If the user configured
+        # a shorter countdown, respect that shorter value.
         if self._advance_delay_2 > 0:
             self._delay2_pending = True
-            self._delay2_remaining = self._countdown_total
+            self._delay2_remaining = min(10, self._countdown_total)
             logger.debug(
                 f"[Countdown] Scheduled advance_delay_2="
                 f"{self._advance_delay_2} in "
@@ -338,6 +383,19 @@ class AdvanceManager(QObject):
         self._tick_running = True
         self._tick_thread = Thread(
             target=self._tick_loop, args=(anchor,), daemon=True)
+        self._tick_thread.start()
+
+    def start_timeline_loop(self, anchor):
+        """Start the heapq timeline loop directly (no countdown).
+        Used for pokemon-only scenarios like munchlax tracking where
+        advances happen at random intervals, not at fixed tick rate."""
+        self.stop_simulating()
+        self._simulating = True
+        self._tick_running = True
+        self._tick_thread = Thread(
+            target=self._timeline_loop,
+            args=(anchor, Const.OFFSET_ADVANCES_PREDICTION),
+            daemon=True)
         self._tick_thread.start()
 
     def _tick_loop(self, anchor):
@@ -436,16 +494,21 @@ class AdvanceManager(QObject):
             rand = self._rng.rangefloat(
                 Const.PKMN_BLINK_INTERVAL_MIN,
                 Const.PKMN_BLINK_INTERVAL_MAX) + \
-                    Const.PKMN_BLINK_INTERVAL_OFFSET
+                Const.PKMN_BLINK_INTERVAL_OFFSET
             heapq.heappush(queue, (anchor + rand, 1))
+
+        self._in_timeline = True
 
         logger.debug(
             f"[Timeline] Started heapq loop: "
             f"human={self._npc_in_timeline + 1}, "
             f"pokemon={self._npc_pkmn_count}")
 
-        delay2_countdown = self._countdown_total if self._delay2_pending \
-            else -1
+        delay2_countdown = min(10, self._countdown_total) \
+            if self._delay2_pending else -1
+
+        if delay2_countdown > 0:
+            self.delay2_countdown_started.emit(delay2_countdown)
 
         while queue and self._tick_running:
             self._advances += 1
@@ -459,11 +522,13 @@ class AdvanceManager(QObject):
             if self._delay2_pending:
                 if delay2_countdown > 0:
                     delay2_countdown -= 1
+                    self.countdown_tick.emit(delay2_countdown)
                 elif delay2_countdown != -1:
                     delay2_countdown = -1
                     self._delay2_pending = False
                     self._rng.get_next_rand_sequence(self._advance_delay_2)
                     self._advances += self._advance_delay_2
+                    self.delay2_countdown_finished.emit()
                     logger.debug(
                         f"[Timeline] advance_delay_2 applied: "
                         f"+{self._advance_delay_2} advances, "
@@ -527,7 +592,7 @@ class AdvanceManager(QObject):
         preview = Xorshift(*self._rng.get_state())
         results = []
         adv = self._advances
-        step = 1 + self._npc_count
+        step = 1 if self._in_timeline else 1 + self._npc_count
 
         for _ in range(count):
             if step == 1:

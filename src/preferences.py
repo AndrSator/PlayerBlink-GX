@@ -123,6 +123,12 @@ class Preferences:
             raise ValueError(
                 f"countdown_ticks must be a integer value. {value!r}")
 
+        if value > Const.DF_COUNTDOWN_DURATION_TICKS:
+            value = Const.DF_COUNTDOWN_DURATION_TICKS
+            logger.warning(
+                f"[Preferences] countdown_ticks exceeds default max. "
+                f"Set to {value}")
+
         self._countdown_ticks = value
 
     @property

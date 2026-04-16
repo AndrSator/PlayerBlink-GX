@@ -1,3 +1,5 @@
+from PySide6.QtWidgets import QApplication
+
 from src.eye_tracker import BlinkType
 from src.constants import Constants as Const
 
@@ -34,3 +36,8 @@ class Utils:
         h = total_seconds // 3600
 
         return f"{h:02}:{m:02}:{s:02}.{ms:03}"
+
+    @staticmethod
+    def copy_content_to_clipboard(text):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)

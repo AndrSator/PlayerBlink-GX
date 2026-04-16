@@ -1,20 +1,17 @@
 import os
-import sys
-import json
 
 from PIL import Image
 from pathlib import Path
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
-from PySide6.QtGui import QFontDatabase
-from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, \
-    QVBoxLayout, QWidget, QDialog, QDialogButtonBox, QLineEdit
+from PySide6.QtCore import Property, Qt, QRect, QRectF, Signal
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtWidgets import QLabel, QScrollArea, QStyle, \
+    QStyleOption, QVBoxLayout, QWidget, QDialog, QDialogButtonBox, \
+    QLineEdit
 
-from ..log import logger
 
-_RESOURCE_MIN_ITEM_SIZE = 50
+_RESOURCE_MIN_ITEM_SIZE = 16
 _SUPPORTED_FORMATS = (".png", ".jpeg", ".bmp")
 
 
@@ -104,6 +101,7 @@ class _FlowContainer(QWidget):
                  min_item_width=_RESOURCE_MIN_ITEM_SIZE,
                  min_item_height=_RESOURCE_MIN_ITEM_SIZE):
         super().__init__()
+        self.setAttribute(Qt.WA_StyledBackground, True)
         self._max_columns = max_columns
         self._min_item_width = min_item_width
         self._min_item_height = min_item_height
@@ -126,11 +124,20 @@ class _FlowContainer(QWidget):
         if not self._items:
             return
 
-        available = self.width() - self._scrollbar_margin
+        m = self.contentsMargins()
+
+        available = (
+            self.width()
+            - m.left()
+            - m.right()
+            - self._scrollbar_margin
+        )
+
         if available <= 0:
             return
 
         sp = self._spacing
+
         cols = max(1, min(
             self._max_columns,
             (available + sp) // (self._min_item_width + sp)
@@ -142,13 +149,21 @@ class _FlowContainer(QWidget):
 
         for i, widget in enumerate(self._items):
             row, col = divmod(i, cols)
-            x = col * (item_w + sp)
-            y = row * (item_h + sp)
+
+            x = m.left() + col * (item_w + sp)
+            y = m.top() + row * (item_h + sp)
+
             widget.setGeometry(int(x), int(y), int(item_w), int(item_h))
             widget.show()
 
         rows = (len(self._items) + cols - 1) // cols
-        total_h = int(rows * item_h + (rows - 1) * sp)
+
+        total_h = int(
+            rows * item_h +
+            (rows - 1) * sp +
+            m.top() + m.bottom()
+        )
+
         self.setMinimumHeight(total_h)
 
         if self._on_row_height_changed:
@@ -164,11 +179,42 @@ class GalleryItem(QLabel):
         self.setMinimumHeight(_RESOURCE_MIN_ITEM_SIZE)
         self.setProperty("selected", False)
 
+        self._border_radius = 0
+        self._sel_border_width = 0
+        self._sel_border_color = QColor(Qt.transparent)
+
         self._resource = resource
         self._source_pixmap = None
 
         if resource and hasattr(resource, "path"):
             self._load_pixmap(str(resource.path))
+
+    @Property(int)
+    def borderRadius(self):
+        return self._border_radius
+
+    @borderRadius.setter
+    def borderRadius(self, v):
+        self._border_radius = v
+        self.update()
+
+    @Property(int)
+    def selBorderWidth(self):
+        return self._sel_border_width
+
+    @selBorderWidth.setter
+    def selBorderWidth(self, v):
+        self._sel_border_width = v
+        self.update()
+
+    @Property(QColor)
+    def selBorderColor(self):
+        return self._sel_border_color
+
+    @selBorderColor.setter
+    def selBorderColor(self, v):
+        self._sel_border_color = v
+        self.update()
 
     @property
     def resource(self):
@@ -187,12 +233,55 @@ class GalleryItem(QLabel):
             self._apply_scaled_pixmap()
 
     def _apply_scaled_pixmap(self):
-        if self._source_pixmap:
-            target = self.size().boundedTo(self._source_pixmap.size())
-            scaled = self._source_pixmap.scaled(
-                target, Qt.KeepAspectRatio, Qt.SmoothTransformation
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        r = self._border_radius
+        selected = self.property("selected") and self._sel_border_width > 0
+        bw = self._sel_border_width if selected else 0
+
+        clip = QPainterPath()
+        if selected:
+            inner_r = max(0, r - bw)
+            clip.addRoundedRect(
+                QRectF(self.rect()).adjusted(bw, bw, -bw, -bw),
+                inner_r, inner_r
             )
-            self.setPixmap(scaled)
+        else:
+            clip.addRoundedRect(QRectF(self.rect()), r, r)
+
+        painter.setClipPath(clip)
+
+        opt = QStyleOption()
+        opt.initFrom(self)
+        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
+
+        if self._source_pixmap:
+            rect = self.rect()
+            scaled = self._source_pixmap.scaled(
+                rect.size(),
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation
+            )
+            sx = (scaled.width() - rect.width()) // 2
+            sy = (scaled.height() - rect.height()) // 2
+            painter.drawPixmap(
+                rect, scaled,
+                QRect(sx, sy, rect.width(), rect.height())
+            )
+
+        if selected:
+            painter.setClipping(False)
+            half = bw / 2
+            sel_rect = QRectF(self.rect()).adjusted(half, half, -half, -half)
+            painter.setPen(QPen(self._sel_border_color, bw))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawRoundedRect(sel_rect, r, r)
+
+        painter.end()
 
     def set_selected(self, selected):
         self.setProperty("selected", selected)
@@ -233,6 +322,7 @@ class GalleryContainer(QWidget):
                  min_item_width=_RESOURCE_MIN_ITEM_SIZE,
                  min_item_height=_RESOURCE_MIN_ITEM_SIZE):
         super().__init__()
+        self.setAttribute(Qt.WA_StyledBackground, True)
         self._res_dir = res_dir
 
         _outer_layout = QVBoxLayout(self)
@@ -253,6 +343,7 @@ class GalleryContainer(QWidget):
         )
         self._scroll.setWidget(self._container)
         self._container._on_row_height_changed = self._update_scroll_min_height
+        self._container.setContentsMargins(10, 10, 10, 10)
 
         self._selected_item = None
 
@@ -414,44 +505,3 @@ class FileNameDialog(QDialog):
         text = text.strip()
         ok_button = self._buttons.button(QDialogButtonBox.Ok)
         ok_button.setEnabled(bool(text))
-
-
-if __name__ == "__main__":
-    app = QApplication()
-
-    window = QWidget()
-    window.setWindowTitle("GalleryItem Playground")
-    window.resize(500, 400)
-
-    root_layout = QVBoxLayout(window)
-    root_layout.setSpacing(12)
-    root_layout.setContentsMargins(16, 16, 16, 16)
-
-    res_dir = os.path.join("images", "eyes")
-    gc = GalleryContainer(res_dir)
-
-    root_layout.addWidget(gc)
-
-    ini_path = "themes/default_dark.ini"
-    qss_path = "resources/style.qss"
-    font_paths = font_paths = ["resources/fonts/RobotoMono-Medium.ttf"]
-
-    try:
-        for font in font_paths:
-            QFontDatabase.addApplicationFont(font)
-
-        with open(ini_path, "r") as f:
-            theme = json.load(f)
-
-        with open(qss_path, "r") as f:
-            qss = f.read()
-
-        for key, value in theme.items():
-            qss = qss.replace(f"{{{{{key}}}}}", value)
-
-        app.setStyleSheet(qss)
-    except Exception as e:
-        logger.error(f"Error loading theme: {e}")
-
-    window.show()
-    sys.exit(app.exec())
