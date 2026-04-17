@@ -21,7 +21,10 @@ _LOADING_SHADER_NAME = "rotom"
 class GLDisplay(QOpenGLWidget):
     """ GPU-accelerated video display widget """
 
-    def __init__(self, parent=None, gpu_scaling=True, smooth=True):
+    def __init__(self, parent=None, gpu_scaling=True,
+                 smooth=True,
+                 roi_color=QColor(255, 0, 0),
+                 img_match_color=QColor(0, 120, 255)):
         super().__init__(parent)
         self._qimage = None
         self._scaled_qimage = None  # pre-scaled for downscaling
@@ -47,6 +50,9 @@ class GLDisplay(QOpenGLWidget):
         self._loading_timer = QTimer(self)
         self._loading_timer.setInterval(16)  # ~60 Hz noise refresh
         self._loading_timer.timeout.connect(self.update)
+
+        self._roi_color = roi_color
+        self._img_match_color = img_match_color
 
     # region General API
 
@@ -132,6 +138,12 @@ class GLDisplay(QOpenGLWidget):
             self._loading_timer.stop()
 
         self.update()
+
+    def set_roi_color(self, value):
+        self._roi_color = QColor(value)
+
+    def set_img_match_color(self, value):
+        self._img_match_color = QColor(value)
 
     # endregion
 
@@ -328,7 +340,7 @@ class GLDisplay(QOpenGLWidget):
         rh = int(h * sy)
         corner = min(rw, rh) // 4
 
-        pen = QPen(QColor(255, 0, 0), 2)
+        pen = QPen(self._roi_color, 2)
         painter.setPen(pen)
         for cx, cy, dx, dy in [
             (rx, ry, 1, 1),
@@ -350,7 +362,7 @@ class GLDisplay(QOpenGLWidget):
         emw = int(mw * sx)
         emh = int(mh * sy)
 
-        pen = QPen(QColor(0, 120, 255), 2)
+        pen = QPen(self._img_match_color, 2)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawRect(emx, emy, emw, emh)

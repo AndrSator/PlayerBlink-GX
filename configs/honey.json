@@ -1,10 +1,10 @@
 {
     "name": "Honey",
     "description": "Wild encounters using honey in Trophy Garden, Solaceon Ruins, Snowpoint Temple...",
-    "image": "barry.png",
+    "image": "bebe.png",
     "roi": [
-        840,
-        361,
+        669,
+        457,
         140,
         152
     ],

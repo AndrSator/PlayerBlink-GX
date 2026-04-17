@@ -10,7 +10,7 @@ from src.utils import Utils
 from src.xorshift import Xorshift
 from src.constants import Constants as Const
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 class AdvanceManager(QObject):
@@ -19,11 +19,12 @@ class AdvanceManager(QObject):
     # dont use int for rng, signed int will truncate in C++ causing overflow
     # adv, tracked_rng, npc_blinks, predictions
     advance_tick = Signal(int, object, list, list)
-    countdown_tick = Signal(int)              # remaining ticks
-    countdown_finished = Signal(int, list)    # advances, predictions
-    auto_start_countdown = Signal()           # countdown auto start
-    delay2_countdown_started = Signal(int)    # delay2 total events
-    delay2_countdown_finished = Signal()      # delay2 applied
+
+    countdown_tick = Signal(int)                 # remaining ticks
+    countdown_finished = Signal(int, list)       # advances, predictions
+    auto_start_countdown = Signal()              # countdown auto start
+    delay2_countdown_started = Signal(int, int)  # total events, base advances
+    delay2_countdown_finished = Signal()         # delay2 applied
 
     def __init__(self):
         super().__init__()
@@ -508,7 +509,8 @@ class AdvanceManager(QObject):
             if self._delay2_pending else -1
 
         if delay2_countdown > 0:
-            self.delay2_countdown_started.emit(delay2_countdown)
+            self.delay2_countdown_started.emit(
+                delay2_countdown, self._advances)
 
         while queue and self._tick_running:
             self._advances += 1
@@ -523,7 +525,7 @@ class AdvanceManager(QObject):
                 if delay2_countdown > 0:
                     delay2_countdown -= 1
                     self.countdown_tick.emit(delay2_countdown)
-                elif delay2_countdown != -1:
+                if delay2_countdown == 0:
                     delay2_countdown = -1
                     self._delay2_pending = False
                     self._rng.get_next_rand_sequence(self._advance_delay_2)

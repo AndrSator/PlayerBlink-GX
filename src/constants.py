@@ -35,10 +35,17 @@ class Constants:
     DF_GPU_RENDERING = True  # True = GPU scales via OpenGL, False = CPU scales
 
     # Tracking
-    BLINKS_REQUIRED_TRACKING = 40
+    BLINKS_REQUIRED_TRACKING = 36
     BLINKS_REQUIRED_REIDENTIFY = 7
     BLINKS_REQUIRED_REIDENTIFY_NOISY = 20
-    BLINKS_REQUIRED_TRACKING_TIDSID = 64
+    # With the 3-bit fallback in reverse_states_by_munchlax, "unsafe"
+    # intervals contribute 3 bits instead of being discarded. Expected
+    # ~3.56 bits/blink. Solver target is 144 bits (128 + 16 margin, same
+    # redundancy as the original 64-blink design) -> ~40 obs typical.
+    # 44 input blinks give ~153 expected bits, enough slack for the solver
+    # to reach rank 128 even when low state bits need deep propagation.
+    # TO BE TESTED!
+    BLINKS_REQUIRED_TRACKING_TIDSID = 44
     REIDENT_MIN = 0
     REIDENT_MAX = 2_000_000
 
@@ -63,6 +70,8 @@ class Constants:
     DF_DISPLAY_MIN_WIDTH = 1920
     DF_DISPLAY_MIN_HEIGHT = 1080
     DF_COUNTDOWN_DURATION_TICKS = 10
+    DF_ROI_COLOR = "#FF0000"
+    DF_IMG_MATCH_COLOR = "#0078FF"
 
     DF_REIDENT_MIN_VAL = 0
     DF_REIDENT_MAX_VAL = 1_000_000

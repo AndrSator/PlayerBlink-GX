@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QColor
 
 from src.eye_tracker import BlinkType
 from src.constants import Constants as Const
@@ -41,3 +42,11 @@ class Utils:
     def copy_content_to_clipboard(text):
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
+
+    @staticmethod
+    def is_valid_hex_color(value: str) -> bool:
+        if not isinstance(value, str):
+            return False
+
+        color = QColor(value)
+        return color.isValid()

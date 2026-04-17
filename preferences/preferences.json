@@ -4,6 +4,8 @@
   "log_level": "DEBUG",
   "calibrated_tick": true,
   "countdown_ticks": 10,
+  "roi_color": "#7F4f0087",
+  "img_match_color": "#7F870038",
   "advanced": {
     "opencv": {
       "width": 1920,

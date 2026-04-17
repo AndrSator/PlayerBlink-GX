@@ -12,7 +12,7 @@ from PySide6.QtCore import QObject, Signal
 from src.constants import Constants as Const
 from src.log import logger
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 # region Models and Enums
@@ -190,6 +190,11 @@ class EyeTracker(QObject):
         self._cv_control = cv_control
         self._state = mode
         self._running = True
+        logger.debug(
+            f"[EyeTracker] Starting {mode.name} "
+            f"target_size={self._size} threshold={self._threshold} "
+            f"frame_correction={self._frame_correction} "
+            f"tracking_area={self._tracking_area}")
         self._worker = Thread(target=self._tracking_loop, daemon=True)
         self._worker.start()
 
@@ -262,7 +267,6 @@ class EyeTracker(QObject):
 
     # region Tracking loop
     def _tracking_loop(self):
-        threshold = self._threshold
         target_size = self._size
         preview_only = self._state == TrackingState.PREVIEW
 
@@ -280,10 +284,11 @@ class EyeTracker(QObject):
                     and detect_state == BlinkType.IDLE:
                 break
 
-            # Re-read on every iteration so ROI / pattern changes
-            # made from the UI take effect in real time
+            # Re-read on every iteration so ROI / pattern / threshold
+            # changes made from the UI take effect in real time
             eye = self._eye_gray
             area = self._tracking_area
+            threshold = self._threshold
             if eye is None or area is None:
                 time.sleep(0.001)
                 continue
@@ -383,6 +388,31 @@ class EyeTracker(QObject):
                     f"{tick_rate * 1000:.3f}ms/tick "
                     f"(\u00b1{se_tick * 1000:.3f}ms) "
                     f"from {len(blink_times)} blinks")
+
+            # Interval quality diagnostics (useful when reducing blink count)
+            iv_for_stats = intervals[1:] if len(intervals) > 1 else intervals
+            if iv_for_stats:
+                iv_arr = np.asarray(iv_for_stats, dtype=np.float64)
+                hist = {v: int((iv_arr == v).sum())
+                        for v in sorted(set(iv_for_stats))}
+                logger.debug(
+                    f"[EyeTracker] Tracking finished "
+                    f"blinks={len(blinks)} doubles={sum(blinks)} "
+                    f"intervals_used={len(iv_for_stats)} "
+                    f"min={int(iv_arr.min())} max={int(iv_arr.max())} "
+                    f"mean={iv_arr.mean():.2f} std={iv_arr.std():.2f} "
+                    f"hist={hist}")
+                raw_arr = np.asarray(
+                    raw_intervals[1:] if len(raw_intervals) > 1
+                    else raw_intervals,
+                    dtype=np.float64)
+                if tick_rate is not None and raw_arr.size:
+                    residuals = raw_arr - iv_arr * tick_rate
+                    logger.debug(
+                        f"[EyeTracker] Interval residuals vs tick "
+                        f"mean={residuals.mean()*1000:.2f}ms "
+                        f"std={residuals.std()*1000:.2f}ms "
+                        f"max_abs={np.abs(residuals).max()*1000:.2f}ms")
 
             self.tracking_finished.emit(
                 blinks, intervals, raw_intervals, offset_time, end_time)

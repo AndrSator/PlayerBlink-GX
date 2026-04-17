@@ -57,8 +57,7 @@ _ICONS = {
         "size": Const.ICON_DEFAULT_SIZE_BIG
     },
     "switch_seed_display": {
-        "icon": "memory.svg",
-        "size": Const.ICON_DEFAULT_SIZE_SMALL
+        "icon": "memory.svg"
     },
     "btn_create_resource": {
         "icon": "add_photo.svg",
@@ -113,7 +112,8 @@ class Menu(CWindow):
         self._final_a_press_adv = -1
         self._delay2_start_at_adv = -1
         self._delay2_a_press_adv = -1
-        self._countdown_end_at_adv = -1
+        self._delay2_countdown_active = False
+        self._countdown_end_at_adv = 0
 
         self._icons_path = Const.ICONS_DIR
 
@@ -612,7 +612,8 @@ class Menu(CWindow):
     def stop_countdown(self):
         stop = True
         self._countdown_active = not stop
-        self._countdown_end_at_adv = -1
+        self._countdown_end_at_adv = 0
+        self._delay2_countdown_active = False
         self._countdown_widget.setVisible(not stop)
         self.btn_start_countdown.setEnabled(stop)
 
@@ -755,8 +756,9 @@ class Menu(CWindow):
         # Static calibration markers (always visible when configured)
         if self._countdown_start_at_adv > 0:
             if (adv == self._final_a_press_adv or
-                    adv == self._delay2_start_at_adv or
-                    adv == self._delay2_a_press_adv):
+                    (not self._delay2_countdown_active
+                     and (adv == self._delay2_start_at_adv
+                          or adv == self._delay2_a_press_adv))):
                 return TimelineEntry.TARGET
 
         return TimelineEntry.PREDICTED
@@ -772,15 +774,18 @@ class Menu(CWindow):
                 and advance == self._countdown_end_at_adv):
             timer_icon = 1
         elif self._countdown_start_at_adv > 0:
-            if advance in (self._final_a_press_adv,
-                           self._delay2_a_press_adv):
+            if (advance == self._final_a_press_adv or
+                    (not self._delay2_countdown_active
+                     and advance == self._delay2_a_press_adv)):
                 timer_icon = 1
-            elif advance in (self._countdown_start_at_adv,
-                             self._delay2_start_at_adv):
+            elif (advance == self._countdown_start_at_adv or
+                    (not self._delay2_countdown_active
+                     and advance == self._delay2_start_at_adv)):
                 timer_icon = 0
 
         lbl = self._acquire_label(
             advance, state, blink_type_icon, timer_icon)
+
         self.timeline_layout.addWidget(lbl)
         lbl.show()
 

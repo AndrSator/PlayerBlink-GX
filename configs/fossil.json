@@ -3,10 +3,10 @@
     "description": "Config for RNG manipulation at the Mining Museum in Oreburgh City.",
     "image": "musseum_employee_eye.png",
     "roi": [
-        350,
-        178,
-        1028,
-        540
+        193,
+        161,
+        144,
+        187
     ],
     "plus_one_menu_close": true,
     "final_a_press_delay": 0,

@@ -3,10 +3,10 @@
     "description": "Config to reidentify using Barry's blinks.",
     "image": "barry.png",
     "roi": [
-        154,
-        167,
-        511,
-        487
+        1139,
+        418,
+        116,
+        132
     ],
     "plus_one_menu_close": true,
     "final_a_press_delay": 65,

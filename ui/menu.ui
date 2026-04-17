@@ -614,7 +614,7 @@
                    <string/>
                   </property>
                   <property name="checked">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <property name="tristate">
                    <bool>false</bool>
@@ -1493,16 +1493,16 @@
                </widget>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_22">
+               <layout class="QHBoxLayout" name="horizontalLayout_35">
                 <item>
-                 <widget class="QLabel" name="lbl_pkmn_npcs">
+                 <widget class="QLabel" name="lbl_npcs">
                   <property name="text">
-                   <string>PKMNs NPCs dur. CD</string>
+                   <string>NPCs</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="spin_pkmn_npcs_countdown">
+                 <widget class="QSpinBox" name="spin_npcs">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
@@ -1534,7 +1534,7 @@
                    <string/>
                   </property>
                   <property name="minimum">
-                   <number>0</number>
+                   <number>-1</number>
                   </property>
                   <property name="maximum">
                    <number>50</number>
@@ -1601,16 +1601,16 @@
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_35">
+               <layout class="QHBoxLayout" name="horizontalLayout_22">
                 <item>
-                 <widget class="QLabel" name="lbl_npcs">
+                 <widget class="QLabel" name="lbl_pkmn_npcs">
                   <property name="text">
-                   <string>NPCs</string>
+                   <string>PKMNs NPCs dur. CD</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="spin_npcs">
+                 <widget class="QSpinBox" name="spin_pkmn_npcs_countdown">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
@@ -1642,7 +1642,7 @@
                    <string/>
                   </property>
                   <property name="minimum">
-                   <number>-1</number>
+                   <number>0</number>
                   </property>
                   <property name="maximum">
                    <number>50</number>
@@ -1681,7 +1681,7 @@
                    <string/>
                   </property>
                   <property name="checked">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <property name="tristate">
                    <bool>false</bool>

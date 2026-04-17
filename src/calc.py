@@ -4,6 +4,7 @@ from bisect import bisect
 from functools import reduce
 
 from src.constants import Constants as Const
+from src.log import logger
 
 
 class Calc:
@@ -45,12 +46,33 @@ class Calc:
         ])
         return trans
 
-    def get_ref_matrix(self, intervals, rows=39):
+    def get_ref_matrix(self, intervals, rows=33):
         """Create the matrix to be referenced for Xorshift state calculation
-        based on player blink intervals"""
+        based on player blink intervals.
+
+        Each observation contributes 4 rows (bits 0..3 of the RNG output at
+        that blink). For a 128-bit state the system needs rows*4 >= 128,
+        i.e. rows >= 32. Default 33 yields 132 observed bits = 4 bits (1
+        observation) of margin. Raise rows for more noise tolerance.
+        """
+        if len(intervals) < rows:
+            raise ValueError(
+                f"Not enough intervals for rows={rows}: "
+                f"got {len(intervals)}")
+        if rows * 4 < 128:
+            raise ValueError(
+                f"rows={rows} gives {rows*4} bits, < 128 required")
+
         intervals = intervals[:rows]
         base_mat = self.get_trans()
         advance_mat = self.get_trans()
+
+        logger.debug(
+            f"[Calc] get_ref_matrix rows={rows} "
+            f"obs_bits={rows*4} margin_bits={rows*4 - 128} "
+            f"intervals_min={min(intervals)} "
+            f"intervals_max={max(intervals)} "
+            f"intervals_sum={sum(intervals)}")
 
         ref_mat = np.zeros((4*rows, 128), "uint8")
         for i in range(rows):
@@ -59,10 +81,25 @@ class Calc:
                 base_mat = base_mat@advance_mat % 2
         return ref_mat
 
-    def get_ref_matrix_munchlax(self, intervals):
+    def get_ref_matrix_munchlax(self, intervals, target_bits=144):
         """Create the matrix to be referenced for Xorshift state calculation
-        based on munchlax intervals"""
-        intervals = intervals[::-1]
+        based on munchlax intervals.
+
+        Each interval contributes 4 bits when "safe" (bit 19 of rand is
+        unambiguous) or 3 bits when "unsafe" (bit 19 dropped). Unsafe
+        intervals used to be discarded, wasting ~44% of observations; with
+        the 3-bit fallback they still contribute bits 22..20.
+
+        Stops once total observed bits reaches target_bits (default 144 =
+        128 + 16 margin, matching the original 64-blink design). Smaller
+        margins (e.g. 132) were observed to leave gauss_jordan rank
+        deficient on low state bits (e.g. seed_3 bit 3) that need several
+        ticks of propagation to bleed into the observed bits 19..22.
+        Returns (ref_mat, used_intervals) where used_intervals is a list of
+        (interval_seconds, bits_used) tuples in consumption (chronological)
+        order.
+        """
+        intervals = list(intervals[::-1])
         section = [
             0,
             3.4333333333333336, 3.795832327504833,
@@ -85,32 +122,60 @@ class Calc:
         base_mat = self.get_trans()
         advance_mat = self.get_trans()
 
-        ref_mat = np.zeros((144, 128), "uint8")
-        safe_intervals = []
-        for i in range(36):
-            # intervals[-1]を挿入した際のインデックスが奇数だと危険な値の可能性がある
-            is_carriable = bisect(section, intervals[-1]) % 2 == 1
-            while is_carriable:
-                # スキップする
-                base_mat = base_mat@advance_mat % 2
-                # 危険な値を除外
-                intervals.pop()
-                is_carriable = bisect(section, intervals[-1]) % 2 == 1
-            ref_mat[4*i:4*(i+1)] = base_mat[105:109]
-            base_mat = base_mat@advance_mat % 2
-            safe_intervals.append(intervals.pop())
-        return ref_mat, safe_intervals
+        rows_list = []
+        used_intervals = []
+        total_bits = 0
+        n_safe = 0
+        n_unsafe = 0
+
+        while intervals and total_bits < target_bits:
+            value = intervals[-1]
+            is_unsafe = bisect(section, value) % 2 == 1
+            if is_unsafe:
+                # Drop bit 19 (LSB of 4-bit extract): only rows for bits
+                # 22, 21, 20.
+                rows_list.append(base_mat[105:108].copy())
+                bits_used = 3
+                n_unsafe += 1
+            else:
+                rows_list.append(base_mat[105:109].copy())
+                bits_used = 4
+                n_safe += 1
+            base_mat = base_mat @ advance_mat % 2
+            intervals.pop()
+            used_intervals.append((value, bits_used))
+            total_bits += bits_used
+
+        logger.debug(
+            f"[Calc] munchlax get_ref_matrix consumed={len(used_intervals)} "
+            f"safe={n_safe} unsafe={n_unsafe} total_bits={total_bits} "
+            f"margin_bits={total_bits - 128} remaining={len(intervals)}")
+
+        if total_bits < 128:
+            raise ValueError(
+                f"Insufficient bits for munchlax solve: got {total_bits}, "
+                f"need >= 128. Consumed {len(used_intervals)} intervals, "
+                f"{len(intervals)} left unused. Increase "
+                f"BLINKS_REQUIRED_TRACKING_TIDSID.")
+
+        ref_mat = np.vstack(rows_list)
+        return ref_mat, used_intervals
 
     def gauss_jordan(self, mat, observed: list):
         """Convert observered information and reference matrix
         to 128 bit Xorshift state via gauss jordan elimination"""
         height, width = mat.shape
 
+        logger.debug(
+            f"[Calc] gauss_jordan start mat=({height}x{width}) "
+            f"observed_len={len(observed)}")
+
         bitmat = [self.list2bitvec(mat[i]) for i in range(height)]
 
         res = observed.copy()
         # forward elimination
         pivot = 0
+        missing_pivots = []
         for i in range(width):
             isfound = False
             for j in range(i, height):
@@ -127,6 +192,19 @@ class Calc:
                         res[j], res[pivot] = res[pivot], res[j]
             if isfound:
                 pivot += 1
+            else:
+                missing_pivots.append(i)
+
+        logger.debug(
+            f"[Calc] gauss_jordan forward pivots_found={pivot}/{width} "
+            f"missing={len(missing_pivots)}")
+        if missing_pivots:
+            logger.error(
+                f"[Calc] gauss_jordan rank deficient: missing pivots at "
+                f"columns {missing_pivots[:8]}"
+                f"{'...' if len(missing_pivots) > 8 else ''} "
+                f"(matrix is rank {pivot}, need {width}). "
+                f"Try increasing BLINKS_REQUIRED_TRACKING.")
 
         for i in range(width):
             check = 1 << (width-i-1)
@@ -154,6 +232,15 @@ class Calc:
     def reverse_states(self, rawblinks: list, intervals: list) -> list:
         """Deduce state of Xorshift random number generator
         using player blinks and intervals"""
+        n_blinks = len(rawblinks)
+        n_intervals = len(intervals)
+        n_double = sum(1 for b in rawblinks if b == 1)
+
+        logger.debug(
+            f"[Calc] reverse_states blinks={n_blinks} "
+            f"intervals={n_intervals} doubles={n_double} "
+            f"singles={n_blinks - n_double}")
+
         blinks = []
         for blink in rawblinks:
             blinks.extend([0, 0, 0])
@@ -169,6 +256,10 @@ class Calc:
             bitvec_result >>= 32
 
         result = result[::-1]  # reverse order
+        logger.debug(
+            f"[Calc] reverse_states seed=("
+            f"{result[0]:#010x}, {result[1]:#010x}, "
+            f"{result[2]:#010x}, {result[3]:#010x})")
         return result
 
     def randrange(self, rand, minimum, maximum):
@@ -185,22 +276,39 @@ class Calc:
     def reverse_states_by_munchlax(self, intervals: list) -> int:
         """Deduce state of Xorshift random number generator
         using munchlax blink intervals"""
-        ref_matrix, safe_intervals = self.get_ref_matrix_munchlax(intervals)
-        bitvectorized_intervals = [self.reverse_float_range(
-            30.0*f, 100, 370) >> 19 for f in safe_intervals]
-        bitlst_intervals = []
-        for bits in bitvectorized_intervals[::-1]:
-            for _ in range(4):
-                bitlst_intervals.append(bits & 1)
-                bits >>= 1
-        bitlst_intervals = bitlst_intervals[::-1]
+        n_in = len(intervals)
+        ref_matrix, used_intervals = self.get_ref_matrix_munchlax(intervals)
+
+        # Build observed bit vector matching the matrix row order.
+        # Matrix rows for one observation are laid out MSB-first:
+        #   row 0 -> bit 22 of rand,  row 1 -> bit 21,
+        #   row 2 -> bit 20,          row 3 -> bit 19 (only if safe).
+        # reverse_float_range(30*f, 100, 370) >> 19 yields those 4 bits
+        # with bit 3 == rand bit 22, bit 0 == rand bit 19.
+        bitlst = []
+        for f, bits_used in used_intervals:
+            v = self.reverse_float_range(30.0 * f, 100, 370) >> 19
+            bitlst.append((v >> 3) & 1)
+            bitlst.append((v >> 2) & 1)
+            bitlst.append((v >> 1) & 1)
+            if bits_used == 4:
+                bitlst.append(v & 1)
+
+        logger.debug(
+            f"[Calc] reverse_states_by_munchlax input_intervals={n_in} "
+            f"used={len(used_intervals)} observed_bits={len(bitlst)} "
+            f"matrix_shape={ref_matrix.shape}")
 
         bitvec_result = self.list2bitvec(
-            self.gauss_jordan(ref_matrix, bitlst_intervals))
+            self.gauss_jordan(ref_matrix, bitlst))
         result = []
         for _ in range(4):
             result.append(bitvec_result & 0xFFFFFFFF)
             bitvec_result >>= 32
 
         result = result[::-1]  # reverse order
+        logger.debug(
+            f"[Calc] reverse_states_by_munchlax seed=("
+            f"{result[0]:#010x}, {result[1]:#010x}, "
+            f"{result[2]:#010x}, {result[3]:#010x})")
         return result

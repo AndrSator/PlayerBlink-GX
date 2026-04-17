@@ -1,5 +1,6 @@
 import json
 
+from src.utils import Utils
 from src.capture import backend
 from src.log import logger, LogLevel
 from src.constants import Constants as Const
@@ -28,6 +29,8 @@ class Preferences:
         self._log_level = LogLevel.INFO.value
         self._calibrated_tick = True
         self._countdown_ticks = Const.DF_COUNTDOWN_DURATION_TICKS
+        self._roi_color = Const.DF_ROI_COLOR
+        self._img_match_color = Const.DF_IMG_MATCH_COLOR
 
         # Advanced
         self._video_capture_width = Const.DF_DISPLAY_MIN_WIDTH
@@ -130,6 +133,28 @@ class Preferences:
                 f"Set to {value}")
 
         self._countdown_ticks = value
+
+    @property
+    def roi_color(self):
+        return self._roi_color
+
+    @roi_color.setter
+    def roi_color(self, value):
+        if not Utils.is_valid_hex_color(value):
+            raise ValueError(f"Invalid color: {value}")
+
+        self._roi_color = value
+
+    @property
+    def img_match_color(self):
+        return self._img_match_color
+
+    @img_match_color.setter
+    def img_match_color(self, value):
+        if not Utils.is_valid_hex_color(value):
+            raise ValueError(f"Invalid color: {value}")
+
+        self._img_match_color = value
 
     @property
     def video_capture_width(self):
@@ -251,6 +276,9 @@ class Preferences:
             "calibrated_tick", self._calibrated_tick)
         self.countdown_ticks = data.get(
             "countdown_ticks", self._countdown_ticks)
+        self.roi_color = data.get("roi_color", self._roi_color)
+        self.img_match_color = data.get(
+            "img_match_color", self._img_match_color)
 
         # OpenCV settings (advanced.opencv section, with top-level fallback)
         opencv = data.get("advanced", {}).get("opencv", {})
@@ -281,8 +309,10 @@ class Preferences:
             "theme": self._theme,
             "language": self._language,
             "log_level": LogLevel(self._log_level).name,
-            "calibrated_tick": self._calibrated_tick,
             "smooth_scaling": self._smooth_scaling,
+            "calibrated_tick": self._calibrated_tick,
+            "roi_color": self._roi_color,
+            "img_match_color": self._img_match_color,
             "advanced": {
                 "opencv": {
                     "width": self._video_capture_width,

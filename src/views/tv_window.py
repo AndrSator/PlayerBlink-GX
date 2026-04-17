@@ -84,6 +84,8 @@ class TvWindow(CWindow):
             gpu_scaling=prefs.gpu_rendering,
             smooth=prefs.smooth_scaling,
         )
+        gl_display.set_roi_color(prefs.roi_color)
+        gl_display.set_img_match_color(prefs.img_match_color)
         self._tv_ui.verticalLayout_6.replaceWidget(old_display, gl_display)
         old_display.deleteLater()
         self._tv_ui.display = gl_display

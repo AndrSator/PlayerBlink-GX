@@ -25,7 +25,7 @@ from src.views.menu import Menu
 
 from src.widgets.cgallery import FileNameDialog
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 class Controller:
@@ -188,7 +188,6 @@ class Controller:
         am.max_reident = int(values[1])
 
     def _on_threshold_changed(self, raw_value):
-        # Mirror Menu's snap so we only push the snapped re-emit
         stepped = round(raw_value / 5) * 5
         if stepped != raw_value or stepped <= 0:
             return
@@ -317,7 +316,7 @@ class Controller:
 
         # Countdown only available when simulation is running
         m.btn_start_countdown.setEnabled(am.is_running())
-        
+
     # endregion
 
     # region EyeTracker
@@ -885,16 +884,22 @@ class Controller:
         am.countdown_auto_start_adv = m._countdown_start_at_adv
 
         # Second timer markers (advance_delay_2)
-        if am.advance_delay_2 > 0 and final_a_press_value > 0:
+        if (am.advance_delay_2 > 0 and final_a_press_value > 0
+                and not m._delay2_countdown_active):
             step = 1 + am.npc_count
             cd_end_adv = (m._countdown_start_at_adv
                           + prefs.countdown_ticks * step)
             plus_menu = 1 if am.inc_one_on_close else 0
-            post_cd = 1 + plus_menu + am.advance_delay + am.npc_pkmn_count
+            # Offset from main-countdown end to first delay2 visual tick:
+            #   +1 game transition, +plus_menu, +advance_delay (backend's
+            #   _apply_post_countdown), then +1 because the timeline loop
+            #   increments `advances` once before decrementing the delay2
+            #   counter on its first iteration.
+            post_cd = 2 + plus_menu + am.advance_delay
             delay2_events = min(10, prefs.countdown_ticks)
 
             m._delay2_start_at_adv = cd_end_adv + post_cd
-            m._delay2_a_press_adv = m._delay2_start_at_adv + delay2_events
+            m._delay2_a_press_adv = m._delay2_start_at_adv + delay2_events - 1
         else:
             m._delay2_start_at_adv = -1
             m._delay2_a_press_adv = -1
@@ -969,11 +974,15 @@ class Controller:
         m.stop_countdown()
         m.init_timeline(advances, 0, predictions)
 
-    def _on_delay2_started(self, total):
+    def _on_delay2_started(self, total, base_advances):
         # In timeline loop each event = 1 advance
-        m._countdown_end_at_adv = am.advances + total
+        m._delay2_countdown_active = True
+        m._delay2_start_at_adv = -1
+        m._delay2_a_press_adv = -1
+        m._countdown_end_at_adv = base_advances + total
         logger.info(f"[Controller] Delay2 countdown started: {total} events, "
-                    f"ends at advance {m._countdown_end_at_adv}")
+                    f"ends at advance {m._countdown_end_at_adv}, "
+                    f"base={base_advances}")
         m.start_countdown(total)
 
     def _on_delay2_finished(self):
