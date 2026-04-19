@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QSize, QRect, QPoint, Signal
 
 from .cwindow import CWindow
 from ..widgets.gl_display import GLDisplay
-from .icon_utils import setup_icons, set_switch_icon, refresh_icon
+from .icon_utils import setup_icons, set_switch_icon, refresh_icon, set_active
 from ..log import logger
 from ..constants import Constants as Const
 from ..preferences import Preferences as Prefs
@@ -46,6 +46,9 @@ _ICONS = {
     "switch_monitor_mode": {
         "icon": ["desktop_landscape.svg", "cable.svg"],
         "tooltip_id": ["monitor_mode_on", "monitor_mode_off"],
+    },
+    "switch_roi_visibility": {
+        "icon": ["visibility_off.svg", "visibility_off.svg"],
     },
 }
 
@@ -166,6 +169,10 @@ class TvWindow(CWindow):
         return self._tv_ui.switch_monitor_mode
 
     @property
+    def switch_roi_visibility(self):
+        return self._tv_ui.switch_roi_visibility
+
+    @property
     def tracking(self):
         return self._tracking
 
@@ -187,18 +194,22 @@ class TvWindow(CWindow):
     def toggle_crop_tracking_area(self):
         self._toggle_crop_mode("tracking_area")
 
+    def toggle_roi_visibility(self):
+        self.display.toggle_roi_visibility()
+
     def _toggle_crop_mode(self, mode):
         if self._crop_mode == mode:
             # Deactivate
-            logger.debug(f"Crop mode deactivated: {mode}")
+            logger.debug(f"[TvWindow] Crop mode deactivated: {mode}")
             self._crop_mode = None
         elif self._crop_mode is not None:
             # Switch from one mode to another - deactivate current first
-            logger.debug(f"Crop mode switched: {self._crop_mode} -> {mode}")
+            logger.debug(
+                f"[TvWindow] Crop mode switched: {self._crop_mode} -> {mode}")
             self._update_crop_button(self._crop_mode, False)
             self._crop_mode = mode
         else:
-            logger.debug(f"Crop mode activated: {mode}")
+            logger.debug(f"[TvWindow] Crop mode activated: {mode}")
             self._crop_mode = mode
 
         active = self._crop_mode == mode
@@ -212,7 +223,7 @@ class TvWindow(CWindow):
         btn_name = "switch_crop_eye" if mode == "eye" \
             else "switch_crop_tracking_area"
         btn = getattr(self, btn_name)
-        self._set_active(btn, active)
+        set_active(btn, active)
         self._set_switch_icon(btn_name, 1 if active else 0)
 
     def set_monitor_mode(self, enabled):
@@ -281,7 +292,7 @@ class TvWindow(CWindow):
         self.cmb_windows_list.setVisible(not visible)
 
     def update_switch_icons(self, capturing, paused):
-        self._set_active(self.switch_pause, paused)
+        set_active(self.switch_pause, paused)
 
         self._set_switch_icon("switch_capture", 0 if capturing else 1)
         self._set_switch_icon("switch_pause", 0 if paused else 1)
@@ -304,6 +315,7 @@ class TvWindow(CWindow):
 
     def _set_tracking_area(self, x, y, w, h):
         self.apply_tracking_area(x, y, w, h)
+        self.display.set_roi_visible()
         self.tracking_area_defined.emit(x, y, w, h)
 
     def push_frame(self, frame):
@@ -433,6 +445,9 @@ class TvWindow(CWindow):
 
     def _handle_roi_event(self, etype, event):
         """ Handle mouse events for dragging / resizing the ROI """
+
+        if not self.display.roi_visible:
+            return False
 
         if etype == event.Type.MouseMove and self._roi_drag_mode is None:
             # Hover: update cursor based on hit zone
@@ -631,11 +646,6 @@ class TvWindow(CWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         # GLDisplay handles its own repaint on resize via paintGL
-
-    def _set_active(self, btn, active):
-        btn.setProperty("active", active)
-        btn.style().unpolish(btn)
-        btn.style().polish(btn)
 
     def _refresh_icon(self, btn_name):
         refresh_icon(self, btn_name, _ICONS, Const.ICONS_DIR,

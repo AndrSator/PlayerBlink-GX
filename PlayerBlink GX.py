@@ -25,7 +25,7 @@ from src.views.menu import Menu
 
 from src.widgets.cgallery import FileNameDialog
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 
 class Controller:
@@ -35,7 +35,6 @@ class Controller:
         super().__init__()
 
         # Frame polling timer
-        prefs = Preferences()
         poll_ms = prefs.display_poll_ms
         if poll_ms <= 0:
             poll_ms = max(1, 1000 // prefs.capture_fps)
@@ -52,8 +51,6 @@ class Controller:
         self._tracking_tidsid = False
         self._pokemon_blink_mode = False
 
-        # Independent model used only to preview combobox selection
-        # without touching the active loaded config (cfm)
         self._preview_cfm = ConfigModel()
 
         self._setup_signals()
@@ -61,6 +58,7 @@ class Controller:
         self.refresh_devices()
         self._sync_eye_controls()
         self._populate_configs()
+        self._sync_preferences()
 
     # region Signal connections
 
@@ -96,6 +94,7 @@ class Controller:
 
         # Config
         cfm.config_loaded.connect(self._on_config_loaded)
+
     # endregion
 
     # Button wiring
@@ -158,6 +157,9 @@ class Controller:
         m.btn_save_config.clicked.connect(self.save_config)
         m.btn_load_config.clicked.connect(self.apply_config)
 
+        # Preferences
+        m.slider_fps.valueChanged.connect(self._on_fps_slider_changed)
+
         # Countdown
         m.btn_start_countdown.clicked.connect(self.handle_countdown)
 
@@ -171,6 +173,7 @@ class Controller:
         tvw.switch_crop_tracking_area.clicked.connect(
             tvw.toggle_crop_tracking_area)
         tvw.switch_crop_eye.clicked.connect(tvw.toggle_crop_eye)
+        tvw.switch_roi_visibility.clicked.connect(tvw.toggle_roi_visibility)
         tvw.switch_monitor_mode.clicked.connect(self.toggle_monitor_mode)
         tvw.cmb_windows_list.activated.connect(
             self.on_window_selected)
@@ -192,6 +195,14 @@ class Controller:
         if stepped != raw_value or stepped <= 0:
             return
         et.threshold = stepped * 0.01
+
+    def _on_fps_slider_changed(self, raw_value):
+        stepped = round(raw_value / 5) * 5
+        if stepped != raw_value or stepped <= 0:
+            return
+
+        # TODO - debounce and autosave in prefs
+        # apply to cv_control if possible without restart app
 
     # Capture toggle
     def toggle_capture(self):
@@ -849,8 +860,6 @@ class Controller:
 
     # region Countdown
     def update_timeline_labels(self):
-        prefs = Preferences()
-
         # Calcs for countdown auto-start and final A press timing
         trgt = m.spin_advance_target.value()
         timeline_buffer = m.spin_timeline_buffer.value()
@@ -956,7 +965,7 @@ class Controller:
             logger.debug("[Controller] Cannot start countdown: not simulating")
             return
 
-        total = pref.countdown_ticks
+        total = prefs.countdown_ticks
         step = 1 + am.npc_count
         m._countdown_end_at_adv = am.advances + total * step
         logger.info(f"[Controller] Starting countdown: {total} game ticks, "
@@ -1147,6 +1156,12 @@ class Controller:
 
     # endregion
 
+    # region Preferences Management
+    def _sync_preferences(self):
+        m.display_preferences()
+
+    # endregion
+
     # region Debug / Test
     def debug_generate_blinks(self):
         import random
@@ -1214,7 +1229,7 @@ def load_theme():
 
         config = configparser.ConfigParser()
         config.optionxform = str  # keep camelCase
-        config.read(pref.theme)
+        config.read(prefs.theme)
 
         if "colors" not in config:
             raise ValueError("Missing [colors] section in theme file.")
@@ -1259,19 +1274,19 @@ if __name__ == "__main__":
         Qt.HighDpiScaleFactorRoundingPolicy.Round)
     app = QtWidgets.QApplication(sys.argv)
 
+    m = Menu()
+    tvw = TvWindow()
+
     if Const.PLATFORM_LINUX:
         app.setStyle("Fusion")
 
-    pref = Preferences()
+    prefs = Preferences()
 
     cvc = CvControl()
     et = EyeTracker()
     am = AdvanceManager()
     em = EyeManager(Const.EYES_DIR)
     cfm = ConfigModel()
-
-    m = Menu()
-    tvw = TvWindow()
 
     c = Controller()
 

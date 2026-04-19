@@ -44,9 +44,12 @@ class Utils:
         clipboard.setText(text)
 
     @staticmethod
-    def is_valid_hex_color(value: str) -> bool:
+    def parse_hex_color(value: str) -> QColor | None:
+        if isinstance(value, QColor):
+            return value
+
         if not isinstance(value, str):
-            return False
+            return None
 
         color = QColor(value)
-        return color.isValid()
+        return color if color.isValid() else None

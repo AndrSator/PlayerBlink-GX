@@ -53,6 +53,11 @@ class GLDisplay(QOpenGLWidget):
 
         self._roi_color = roi_color
         self._img_match_color = img_match_color
+        self._roi_visible = True
+
+    @property
+    def roi_visible(self):
+        return self._roi_visible
 
     # region General API
 
@@ -145,6 +150,12 @@ class GLDisplay(QOpenGLWidget):
     def set_img_match_color(self, value):
         self._img_match_color = QColor(value)
 
+    def toggle_roi_visibility(self):
+        self._roi_visible = not self._roi_visible
+
+    def set_roi_visible(self):
+        self._roi_visible = True
+
     # endregion
 
     # region OpenGL rendering
@@ -236,7 +247,7 @@ class GLDisplay(QOpenGLWidget):
                 painter.drawImage(cr, scaled)
 
             # Overlays (drawn on top of the frame by the GPU)
-            if self._tracking_area is not None:
+            if self._tracking_area is not None and self._roi_visible:
                 self._paint_tracking_area(painter)
 
             if self._eye_match is not None:

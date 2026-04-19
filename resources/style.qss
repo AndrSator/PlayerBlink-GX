@@ -243,3 +243,7 @@ QScrollArea > QWidget { /* viewport */
     border: none;
     
 }
+
+QComboBox {
+    padding-left: 1em;
+}

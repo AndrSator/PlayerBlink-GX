@@ -5,15 +5,17 @@ from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent
 from PySide6.QtGui import QPixmap
 
 from ..utils import Utils
+from ..log import LogLevel
 from ..eye_tracker import BlinkType
 from ..constants import Constants as Const
+from ..preferences import Preferences
 
 from ..widgets.cadvance_label import AdvanceLabel
 from ..widgets.cprogress import LinearProgress, CircularProgress
 from ..widgets.cgallery import GalleryContainer
 
 from .cwindow import CWindow
-from .icon_utils import setup_icons, set_switch_icon
+from .icon_utils import setup_icons, set_switch_icon, set_active
 from ..ui.menu_ui import Ui_menu_view
 
 
@@ -59,6 +61,9 @@ _ICONS = {
     "switch_seed_display": {
         "icon": "memory.svg"
     },
+    "switch_preview_tracking": {
+        "icon": ["preview.svg", "preview.svg"]
+    },
     "btn_create_resource": {
         "icon": "add_photo.svg",
     },
@@ -83,6 +88,13 @@ _ICONS = {
     "btn_load_config": {
         "icon": "check.svg",
     },
+}
+
+_RESOLUTIONS = {
+    "720p (HD)":    (1280, 720),
+    "1080p (FHD)":  (1920, 1080),
+    "1440p (WQHD)": (2560, 1440),
+    "2160p (4K)":   (3840, 2160),
 }
 
 
@@ -143,6 +155,7 @@ class Menu(CWindow):
         self._link_buttons()
         self.set_seed_display_mode()
         self.sync_tracking_state(tracking=False, preview=False)
+        self._populate_comboboxes()
 
         self.btn_debug.setVisible(Const.DEBUG_MODE)
 
@@ -230,6 +243,10 @@ class Menu(CWindow):
 
         # Eye Manager Tab
         # TODO - buttons from this tabs
+
+        # Preference Tab
+        self.slider_fps.valueChanged.connect(
+            self._update_fps_display)
 
         # Debug Tab
         # TODO - buttons from this tab
@@ -471,6 +488,70 @@ class Menu(CWindow):
     def gv_img_preview(self):
         return self._menu_ui.gv_img_preview
 
+    # Preferences tab
+    @property
+    def cmb_theme(self):
+        return self._menu_ui.cmb_theme
+
+    @property
+    def cmb_language(self):
+        return self._menu_ui.cmb_language
+
+    @property
+    def cmb_log_level(self):
+        return self._menu_ui.cmb_log_level
+
+    @property
+    def chkb_calibrated_tick(self):
+        return self._menu_ui.chkb_calibrated_tick
+
+    @property
+    def spin_countdown_advances(self):
+        return self._menu_ui.spin_countdown_advances
+
+    @property
+    def frame_roi_color(self):
+        return self._menu_ui.frame_roi_color
+
+    @property
+    def frame_img_match_color(self):
+        return self._menu_ui.frame_img_match_color
+
+    @property
+    def cmb_cv_backend(self):
+        return self._menu_ui.cmb_cv_backend
+
+    @property
+    def cmb_cv_codec(self):
+        return self._menu_ui.cmb_cv_codec
+
+    @property
+    def cmb_resolutions(self):
+        return self._menu_ui.cmb_resolutions
+
+    @cmb_resolutions.setter
+    def cmb_resolutions(self, value):
+        width, height = map(int, value)
+        self._menu_ui.cmb_resolutions.setCurrentText(f"{width}x{height}")
+
+    @property
+    def slider_fps(self):
+        return self._menu_ui.slider_fps
+
+    @property
+    def lbl_fps_value(self):
+        return self._menu_ui.lbl_fps_value
+
+    # Debug Tab
+
+    @property
+    def btn_generate_blinks(self):
+        return self._menu_ui.btn_generate_blinks
+
+    @property
+    def btn_generate_blinks_munchlax(self):
+        return self._menu_ui.btn_generate_blinks_munchlax
+
     # endregion
 
     def display_config_image(self, image_path):
@@ -506,17 +587,45 @@ class Menu(CWindow):
         self.lbl_cfg_pkmn_npcs_countdown_value.setText(
             str(cfg.pkmn_npc))
 
-    # region Debug Tab
+    def display_preferences(self):
+        prefs = Preferences()
+        # self.cmb_language = prefs.language # TODO
+        self.cmb_log_level.setCurrentText(LogLevel(prefs.log_level).name)
+        self.chkb_calibrated_tick.setChecked(prefs.calibrated_tick)
+        self._set_roi_color_frame(prefs.roi_color)
+        self._set_img_match_color_frame(prefs.img_match_color)
+        self.spin_countdown_advances.setValue(prefs.countdown_ticks)
+        # self.frame_roi_color = prefs.roi_color
+        # self.frame_img_match_color = prefs.img_match_color
 
-    @property
-    def btn_generate_blinks(self):
-        return self._menu_ui.btn_generate_blinks
+        width = prefs.video_capture_width
+        height = prefs.video_capture_height
+        target = (width, height)
 
-    @property
-    def btn_generate_blinks_munchlax(self):
-        return self._menu_ui.btn_generate_blinks_munchlax
+        for i in range(self.cmb_resolutions.count()):
+            if self.cmb_resolutions.itemData(i) == target:
+                self.cmb_resolutions.setCurrentIndex(i)
+                break
 
-    # endregion
+        self.cmb_cv_backend.setCurrentText(prefs.capture_backend)
+        self.cmb_resolutions = prefs.video_capture_width, \
+            prefs.video_capture_height
+
+    def _set_roi_color_frame(self, value):
+        c = Utils.parse_hex_color(value)
+        if not c:
+            return
+
+        self.frame_roi_color.setStyleSheet(
+            f"background-color: {c.name()}")
+
+    def _set_img_match_color_frame(self, value):
+        c = Utils.parse_hex_color(value)
+        if not c:
+            return
+
+        self.frame_img_match_color.setStyleSheet(
+            f"background-color: {c.name()}")
 
     def _switch_to_tab(self, tab_name):
         curr_tab_index = self.tab_widget.currentIndex()
@@ -573,10 +682,19 @@ class Menu(CWindow):
 
         set_switch_icon(self, "switch_tracking", _ICONS, self._icons_path,
                         1 if tracking else 0, Const.ICON_DEFAULT_SIZE_BIG)
-        self.switch_preview_tracking.setText(
-            "STOP" if preview else "PREVIEW")
+
+        set_active(self.switch_preview_tracking, preview)
+        self._set_switch_icon("switch_preview_tracking", 0 if preview else 1)
 
         self.set_enabled_tracking_progress(tracking)
+
+    def _populate_comboboxes(self):
+        for text, (w, h) in _RESOLUTIONS.items():
+            self.cmb_resolutions.addItem(text, (w, h))
+
+    def _set_switch_icon(self, btn_name, icon_index):
+        set_switch_icon(self, btn_name, _ICONS, Const.ICONS_DIR,
+                        icon_index, Const.ICON_DEFAULT_SIZE)
 
     def stop_tracking_process(self):
         self._tracking_progress.total_segments = 1
@@ -638,7 +756,18 @@ class Menu(CWindow):
         text = f"{value:.2f}".rstrip('0').rstrip('.')
         self.lbl_threshold_value.setText(text)
 
+    def _update_fps_display(self):
+        raw_value = self.slider_fps.value()
+
+        stepped_value = round(raw_value / 5) * 5
+        if stepped_value != raw_value:
+            self.slider_fps.setValue(stepped_value)
+            return
+
+        self.lbl_fps_value.setText(str(stepped_value))
+
     # region Advance timeline
+
     def _recycle_label(self, label):
         label.hide()
         self._label_pool.append(label)

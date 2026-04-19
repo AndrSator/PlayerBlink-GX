@@ -17,9 +17,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QCheckBox, QComboBox,
     QDoubleSpinBox, QFrame, QGraphicsView, QGroupBox,
-    QHBoxLayout, QLabel, QPushButton, QScrollArea,
-    QSizePolicy, QSlider, QSpacerItem, QSpinBox,
-    QTabWidget, QTextEdit, QVBoxLayout, QWidget)
+    QHBoxLayout, QLabel, QLayout, QPushButton,
+    QScrollArea, QSizePolicy, QSlider, QSpacerItem,
+    QSpinBox, QTabWidget, QTextEdit, QVBoxLayout,
+    QWidget)
 
 from superqt import QDoubleRangeSlider
 
@@ -27,7 +28,7 @@ class Ui_menu_view(object):
     def setupUi(self, menu_view):
         if not menu_view.objectName():
             menu_view.setObjectName(u"menu_view")
-        menu_view.resize(712, 613)
+        menu_view.resize(712, 636)
         self.verticalLayout_3 = QVBoxLayout(menu_view)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.tab_widget = QTabWidget(menu_view)
@@ -51,7 +52,7 @@ class Ui_menu_view(object):
         self.gbox_adv_timeline.setObjectName(u"gbox_adv_timeline")
         self.gbox_adv_timeline.setMaximumSize(QSize(150, 16777215))
         self.verticalLayout = QVBoxLayout(self.gbox_adv_timeline)
-        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(10, 10, 10, 10)
         self.lbl_timeline_title = QLabel(self.gbox_adv_timeline)
@@ -79,7 +80,7 @@ class Ui_menu_view(object):
         self.scrollArea.setAlignment(Qt.AlignCenter)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 128, 445))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 128, 466))
         self.verticalLayout_11 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_11.setSpacing(0)
         self.verticalLayout_11.setObjectName(u"verticalLayout_11")
@@ -137,7 +138,7 @@ class Ui_menu_view(object):
         self.gbox_tracking = QGroupBox(self.Main)
         self.gbox_tracking.setObjectName(u"gbox_tracking")
         self.verticalLayout_14 = QVBoxLayout(self.gbox_tracking)
-        self.verticalLayout_14.setSpacing(0)
+        self.verticalLayout_14.setSpacing(1)
         self.verticalLayout_14.setObjectName(u"verticalLayout_14")
         self.verticalLayout_14.setContentsMargins(10, 10, 10, 10)
         self.lbl_tracking_title = QLabel(self.gbox_tracking)
@@ -265,7 +266,7 @@ class Ui_menu_view(object):
         self.gbox_countdown = QGroupBox(self.Main)
         self.gbox_countdown.setObjectName(u"gbox_countdown")
         self.verticalLayout_16 = QVBoxLayout(self.gbox_countdown)
-        self.verticalLayout_16.setSpacing(0)
+        self.verticalLayout_16.setSpacing(1)
         self.verticalLayout_16.setObjectName(u"verticalLayout_16")
         self.verticalLayout_16.setContentsMargins(10, 10, 10, 10)
         self.lbl_countdown_title = QLabel(self.gbox_countdown)
@@ -350,7 +351,7 @@ class Ui_menu_view(object):
         sizePolicy2.setHeightForWidth(self.gbox_seed.sizePolicy().hasHeightForWidth())
         self.gbox_seed.setSizePolicy(sizePolicy2)
         self.verticalLayout_15 = QVBoxLayout(self.gbox_seed)
-        self.verticalLayout_15.setSpacing(0)
+        self.verticalLayout_15.setSpacing(1)
         self.verticalLayout_15.setObjectName(u"verticalLayout_15")
         self.verticalLayout_15.setContentsMargins(10, 10, 10, 10)
         self.lbl_seed_title = QLabel(self.gbox_seed)
@@ -491,9 +492,9 @@ class Ui_menu_view(object):
         self.gbox_calibration = QGroupBox(self.Main)
         self.gbox_calibration.setObjectName(u"gbox_calibration")
         self.verticalLayout_18 = QVBoxLayout(self.gbox_calibration)
-        self.verticalLayout_18.setSpacing(0)
+        self.verticalLayout_18.setSpacing(1)
         self.verticalLayout_18.setObjectName(u"verticalLayout_18")
-        self.verticalLayout_18.setContentsMargins(10, 10, 10, 6)
+        self.verticalLayout_18.setContentsMargins(10, 10, 10, 10)
         self.lbl_calibration_title = QLabel(self.gbox_calibration)
         self.lbl_calibration_title.setObjectName(u"lbl_calibration_title")
         sizePolicy2.setHeightForWidth(self.lbl_calibration_title.sizePolicy().hasHeightForWidth())
@@ -846,6 +847,14 @@ class Ui_menu_view(object):
         self.verticalLayout_9.setSpacing(6)
         self.verticalLayout_9.setObjectName(u"verticalLayout_9")
         self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.lbl_eye_manager_title = QLabel(self.EyeManager)
+        self.lbl_eye_manager_title.setObjectName(u"lbl_eye_manager_title")
+        sizePolicy2.setHeightForWidth(self.lbl_eye_manager_title.sizePolicy().hasHeightForWidth())
+        self.lbl_eye_manager_title.setSizePolicy(sizePolicy2)
+        self.lbl_eye_manager_title.setProperty(u"title", True)
+
+        self.verticalLayout_9.addWidget(self.lbl_eye_manager_title)
+
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.placeholder_eye_manager = QWidget(self.EyeManager)
@@ -857,6 +866,24 @@ class Ui_menu_view(object):
 
         self.verticalLayout_10 = QVBoxLayout()
         self.verticalLayout_10.setObjectName(u"verticalLayout_10")
+        self.switch_preview_tracking = QPushButton(self.EyeManager)
+        self.switch_preview_tracking.setObjectName(u"switch_preview_tracking")
+        sizePolicy1.setHeightForWidth(self.switch_preview_tracking.sizePolicy().hasHeightForWidth())
+        self.switch_preview_tracking.setSizePolicy(sizePolicy1)
+        self.switch_preview_tracking.setMinimumSize(QSize(32, 32))
+        self.switch_preview_tracking.setMaximumSize(QSize(32, 32))
+        self.switch_preview_tracking.setStyleSheet(u"")
+        self.switch_preview_tracking.setFlat(True)
+
+        self.verticalLayout_10.addWidget(self.switch_preview_tracking)
+
+        self.line_3 = QFrame(self.EyeManager)
+        self.line_3.setObjectName(u"line_3")
+        self.line_3.setFrameShape(QFrame.Shape.HLine)
+        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.verticalLayout_10.addWidget(self.line_3)
+
         self.btn_create_resource = QPushButton(self.EyeManager)
         self.btn_create_resource.setObjectName(u"btn_create_resource")
         sizePolicy1.setHeightForWidth(self.btn_create_resource.sizePolicy().hasHeightForWidth())
@@ -881,26 +908,23 @@ class Ui_menu_view(object):
 
         self.verticalLayout_10.addItem(self.verticalSpacer)
 
-        self.switch_preview_tracking = QPushButton(self.EyeManager)
-        self.switch_preview_tracking.setObjectName(u"switch_preview_tracking")
-        sizePolicy1.setHeightForWidth(self.switch_preview_tracking.sizePolicy().hasHeightForWidth())
-        self.switch_preview_tracking.setSizePolicy(sizePolicy1)
-        self.switch_preview_tracking.setMinimumSize(QSize(32, 32))
-        self.switch_preview_tracking.setMaximumSize(QSize(32, 32))
-        self.switch_preview_tracking.setStyleSheet(u"")
-        self.switch_preview_tracking.setFlat(True)
-
-        self.verticalLayout_10.addWidget(self.switch_preview_tracking)
-
 
         self.horizontalLayout.addLayout(self.verticalLayout_10)
 
 
         self.verticalLayout_9.addLayout(self.horizontalLayout)
 
+        self.gbox_seed_2 = QGroupBox(self.EyeManager)
+        self.gbox_seed_2.setObjectName(u"gbox_seed_2")
+        sizePolicy2.setHeightForWidth(self.gbox_seed_2.sizePolicy().hasHeightForWidth())
+        self.gbox_seed_2.setSizePolicy(sizePolicy2)
+        self.verticalLayout_19 = QVBoxLayout(self.gbox_seed_2)
+        self.verticalLayout_19.setSpacing(1)
+        self.verticalLayout_19.setObjectName(u"verticalLayout_19")
+        self.verticalLayout_19.setContentsMargins(10, 10, 10, 10)
         self.horizontalLayout_14 = QHBoxLayout()
         self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
-        self.lbl_threshold = QLabel(self.EyeManager)
+        self.lbl_threshold = QLabel(self.gbox_seed_2)
         self.lbl_threshold.setObjectName(u"lbl_threshold")
 
         self.horizontalLayout_14.addWidget(self.lbl_threshold)
@@ -909,7 +933,7 @@ class Ui_menu_view(object):
 
         self.horizontalLayout_14.addItem(self.horizontalSpacer_2)
 
-        self.slider_threshold = QSlider(self.EyeManager)
+        self.slider_threshold = QSlider(self.gbox_seed_2)
         self.slider_threshold.setObjectName(u"slider_threshold")
         self.slider_threshold.setMinimumSize(QSize(0, 20))
         self.slider_threshold.setMinimum(10)
@@ -920,7 +944,7 @@ class Ui_menu_view(object):
 
         self.horizontalLayout_14.addWidget(self.slider_threshold)
 
-        self.lbl_threshold_value = QLabel(self.EyeManager)
+        self.lbl_threshold_value = QLabel(self.gbox_seed_2)
         self.lbl_threshold_value.setObjectName(u"lbl_threshold_value")
         self.lbl_threshold_value.setMinimumSize(QSize(30, 0))
         self.lbl_threshold_value.setAlignment(Qt.AlignCenter)
@@ -928,7 +952,10 @@ class Ui_menu_view(object):
         self.horizontalLayout_14.addWidget(self.lbl_threshold_value)
 
 
-        self.verticalLayout_9.addLayout(self.horizontalLayout_14)
+        self.verticalLayout_19.addLayout(self.horizontalLayout_14)
+
+
+        self.verticalLayout_9.addWidget(self.gbox_seed_2)
 
         self.tab_widget.addTab(self.EyeManager, "")
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.EyeManager), u"EyeManager")
@@ -938,26 +965,43 @@ class Ui_menu_view(object):
         self.verticalLayout_6.setSpacing(6)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
         self.verticalLayout_6.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_8 = QHBoxLayout()
-        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.verticalLayout_12 = QVBoxLayout()
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
         self.lbl_config_title = QLabel(self.Config)
         self.lbl_config_title.setObjectName(u"lbl_config_title")
         sizePolicy2.setHeightForWidth(self.lbl_config_title.sizePolicy().hasHeightForWidth())
         self.lbl_config_title.setSizePolicy(sizePolicy2)
         self.lbl_config_title.setProperty(u"title", True)
 
-        self.verticalLayout_12.addWidget(self.lbl_config_title)
+        self.verticalLayout_6.addWidget(self.lbl_config_title)
 
-        self.cmb_config = QComboBox(self.Config)
+        self.horizontalLayout_8 = QHBoxLayout()
+        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
+        self.verticalLayout_12 = QVBoxLayout()
+        self.verticalLayout_12.setSpacing(6)
+        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
+        self.gbox_config_preview = QGroupBox(self.Config)
+        self.gbox_config_preview.setObjectName(u"gbox_config_preview")
+        sizePolicy2.setHeightForWidth(self.gbox_config_preview.sizePolicy().hasHeightForWidth())
+        self.gbox_config_preview.setSizePolicy(sizePolicy2)
+        self.verticalLayout_21 = QVBoxLayout(self.gbox_config_preview)
+        self.verticalLayout_21.setSpacing(1)
+        self.verticalLayout_21.setObjectName(u"verticalLayout_21")
+        self.verticalLayout_21.setContentsMargins(10, 10, 10, 10)
+        self.cmb_config = QComboBox(self.gbox_config_preview)
         self.cmb_config.setObjectName(u"cmb_config")
+        self.cmb_config.setMinimumSize(QSize(0, 32))
 
-        self.verticalLayout_12.addWidget(self.cmb_config)
+        self.verticalLayout_21.addWidget(self.cmb_config)
+
+        self.line = QFrame(self.gbox_config_preview)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.Shape.HLine)
+        self.line.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.verticalLayout_21.addWidget(self.line)
 
         self.horizontalLayout_30 = QHBoxLayout()
         self.horizontalLayout_30.setObjectName(u"horizontalLayout_30")
-        self.textEdit = QTextEdit(self.Config)
+        self.textEdit = QTextEdit(self.gbox_config_preview)
         self.textEdit.setObjectName(u"textEdit")
         sizePolicy3.setHeightForWidth(self.textEdit.sizePolicy().hasHeightForWidth())
         self.textEdit.setSizePolicy(sizePolicy3)
@@ -965,7 +1009,7 @@ class Ui_menu_view(object):
 
         self.horizontalLayout_30.addWidget(self.textEdit)
 
-        self.gv_img_preview = QGraphicsView(self.Config)
+        self.gv_img_preview = QGraphicsView(self.gbox_config_preview)
         self.gv_img_preview.setObjectName(u"gv_img_preview")
         sizePolicy1.setHeightForWidth(self.gv_img_preview.sizePolicy().hasHeightForWidth())
         self.gv_img_preview.setSizePolicy(sizePolicy1)
@@ -974,170 +1018,174 @@ class Ui_menu_view(object):
         self.horizontalLayout_30.addWidget(self.gv_img_preview)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_30)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_30)
 
-        self.line_11 = QFrame(self.Config)
-        self.line_11.setObjectName(u"line_11")
-        self.line_11.setFrameShape(QFrame.Shape.HLine)
-        self.line_11.setFrameShadow(QFrame.Shadow.Sunken)
-
-        self.verticalLayout_12.addWidget(self.line_11)
-
-        self.horizontalLayout_17 = QHBoxLayout()
-        self.horizontalLayout_17.setObjectName(u"horizontalLayout_17")
-        self.lbl_cfg_roi = QLabel(self.Config)
+        self.horizontalLayout_52 = QHBoxLayout()
+        self.horizontalLayout_52.setObjectName(u"horizontalLayout_52")
+        self.lbl_cfg_roi = QLabel(self.gbox_config_preview)
         self.lbl_cfg_roi.setObjectName(u"lbl_cfg_roi")
 
-        self.horizontalLayout_17.addWidget(self.lbl_cfg_roi)
+        self.horizontalLayout_52.addWidget(self.lbl_cfg_roi)
 
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_28 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_17.addItem(self.horizontalSpacer_3)
+        self.horizontalLayout_52.addItem(self.horizontalSpacer_28)
 
-        self.lbl_cfg_roi_value = QLabel(self.Config)
+        self.lbl_cfg_roi_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_roi_value.setObjectName(u"lbl_cfg_roi_value")
+        self.lbl_cfg_roi_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_17.addWidget(self.lbl_cfg_roi_value)
+        self.horizontalLayout_52.addWidget(self.lbl_cfg_roi_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_17)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_52)
 
-        self.horizontalLayout_23 = QHBoxLayout()
-        self.horizontalLayout_23.setObjectName(u"horizontalLayout_23")
-        self.lbl_cfg_threshold = QLabel(self.Config)
+        self.horizontalLayout_53 = QHBoxLayout()
+        self.horizontalLayout_53.setObjectName(u"horizontalLayout_53")
+        self.lbl_cfg_threshold = QLabel(self.gbox_config_preview)
         self.lbl_cfg_threshold.setObjectName(u"lbl_cfg_threshold")
 
-        self.horizontalLayout_23.addWidget(self.lbl_cfg_threshold)
+        self.horizontalLayout_53.addWidget(self.lbl_cfg_threshold)
 
-        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_29 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_23.addItem(self.horizontalSpacer_6)
+        self.horizontalLayout_53.addItem(self.horizontalSpacer_29)
 
-        self.lbl_cfg_threshold_value = QLabel(self.Config)
+        self.lbl_cfg_threshold_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_threshold_value.setObjectName(u"lbl_cfg_threshold_value")
+        self.lbl_cfg_threshold_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_23.addWidget(self.lbl_cfg_threshold_value)
+        self.horizontalLayout_53.addWidget(self.lbl_cfg_threshold_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_23)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_53)
 
-        self.horizontalLayout_24 = QHBoxLayout()
-        self.horizontalLayout_24.setObjectName(u"horizontalLayout_24")
-        self.lbl_cfg_plus_one_menu_close = QLabel(self.Config)
+        self.horizontalLayout_54 = QHBoxLayout()
+        self.horizontalLayout_54.setObjectName(u"horizontalLayout_54")
+        self.lbl_cfg_plus_one_menu_close = QLabel(self.gbox_config_preview)
         self.lbl_cfg_plus_one_menu_close.setObjectName(u"lbl_cfg_plus_one_menu_close")
 
-        self.horizontalLayout_24.addWidget(self.lbl_cfg_plus_one_menu_close)
+        self.horizontalLayout_54.addWidget(self.lbl_cfg_plus_one_menu_close)
 
-        self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_30 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_24.addItem(self.horizontalSpacer_7)
+        self.horizontalLayout_54.addItem(self.horizontalSpacer_30)
 
-        self.lbl_cfg_plus_one_menu_close_value = QLabel(self.Config)
+        self.lbl_cfg_plus_one_menu_close_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_plus_one_menu_close_value.setObjectName(u"lbl_cfg_plus_one_menu_close_value")
+        self.lbl_cfg_plus_one_menu_close_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_24.addWidget(self.lbl_cfg_plus_one_menu_close_value)
+        self.horizontalLayout_54.addWidget(self.lbl_cfg_plus_one_menu_close_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_24)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_54)
 
-        self.horizontalLayout_25 = QHBoxLayout()
-        self.horizontalLayout_25.setObjectName(u"horizontalLayout_25")
-        self.lbl_cfg_final_a_press_delay = QLabel(self.Config)
+        self.horizontalLayout_55 = QHBoxLayout()
+        self.horizontalLayout_55.setObjectName(u"horizontalLayout_55")
+        self.lbl_cfg_final_a_press_delay = QLabel(self.gbox_config_preview)
         self.lbl_cfg_final_a_press_delay.setObjectName(u"lbl_cfg_final_a_press_delay")
 
-        self.horizontalLayout_25.addWidget(self.lbl_cfg_final_a_press_delay)
+        self.horizontalLayout_55.addWidget(self.lbl_cfg_final_a_press_delay)
 
-        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_31 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_25.addItem(self.horizontalSpacer_8)
+        self.horizontalLayout_55.addItem(self.horizontalSpacer_31)
 
-        self.lbl_cfg_final_a_press_delay_value = QLabel(self.Config)
+        self.lbl_cfg_final_a_press_delay_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_final_a_press_delay_value.setObjectName(u"lbl_cfg_final_a_press_delay_value")
+        self.lbl_cfg_final_a_press_delay_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_25.addWidget(self.lbl_cfg_final_a_press_delay_value)
+        self.horizontalLayout_55.addWidget(self.lbl_cfg_final_a_press_delay_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_25)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_55)
 
-        self.horizontalLayout_26 = QHBoxLayout()
-        self.horizontalLayout_26.setObjectName(u"horizontalLayout_26")
-        self.lbl_timeline_buffer = QLabel(self.Config)
+        self.horizontalLayout_56 = QHBoxLayout()
+        self.horizontalLayout_56.setObjectName(u"horizontalLayout_56")
+        self.lbl_timeline_buffer = QLabel(self.gbox_config_preview)
         self.lbl_timeline_buffer.setObjectName(u"lbl_timeline_buffer")
 
-        self.horizontalLayout_26.addWidget(self.lbl_timeline_buffer)
+        self.horizontalLayout_56.addWidget(self.lbl_timeline_buffer)
 
-        self.horizontalSpacer_9 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_32 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_26.addItem(self.horizontalSpacer_9)
+        self.horizontalLayout_56.addItem(self.horizontalSpacer_32)
 
-        self.lbl_timeline_buffer_value = QLabel(self.Config)
+        self.lbl_timeline_buffer_value = QLabel(self.gbox_config_preview)
         self.lbl_timeline_buffer_value.setObjectName(u"lbl_timeline_buffer_value")
+        self.lbl_timeline_buffer_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_26.addWidget(self.lbl_timeline_buffer_value)
+        self.horizontalLayout_56.addWidget(self.lbl_timeline_buffer_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_26)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_56)
 
-        self.horizontalLayout_27 = QHBoxLayout()
-        self.horizontalLayout_27.setObjectName(u"horizontalLayout_27")
-        self.lbl_cfg_npcs = QLabel(self.Config)
+        self.horizontalLayout_57 = QHBoxLayout()
+        self.horizontalLayout_57.setObjectName(u"horizontalLayout_57")
+        self.lbl_cfg_npcs = QLabel(self.gbox_config_preview)
         self.lbl_cfg_npcs.setObjectName(u"lbl_cfg_npcs")
 
-        self.horizontalLayout_27.addWidget(self.lbl_cfg_npcs)
+        self.horizontalLayout_57.addWidget(self.lbl_cfg_npcs)
 
-        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_33 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_27.addItem(self.horizontalSpacer_10)
+        self.horizontalLayout_57.addItem(self.horizontalSpacer_33)
 
-        self.lbl_cfg_npcs_value = QLabel(self.Config)
+        self.lbl_cfg_npcs_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_npcs_value.setObjectName(u"lbl_cfg_npcs_value")
+        self.lbl_cfg_npcs_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_27.addWidget(self.lbl_cfg_npcs_value)
+        self.horizontalLayout_57.addWidget(self.lbl_cfg_npcs_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_27)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_57)
 
-        self.horizontalLayout_28 = QHBoxLayout()
-        self.horizontalLayout_28.setObjectName(u"horizontalLayout_28")
-        self.lbl_cfg_npcs_cd = QLabel(self.Config)
+        self.horizontalLayout_58 = QHBoxLayout()
+        self.horizontalLayout_58.setObjectName(u"horizontalLayout_58")
+        self.lbl_cfg_npcs_cd = QLabel(self.gbox_config_preview)
         self.lbl_cfg_npcs_cd.setObjectName(u"lbl_cfg_npcs_cd")
 
-        self.horizontalLayout_28.addWidget(self.lbl_cfg_npcs_cd)
+        self.horizontalLayout_58.addWidget(self.lbl_cfg_npcs_cd)
 
-        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_34 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_28.addItem(self.horizontalSpacer_11)
+        self.horizontalLayout_58.addItem(self.horizontalSpacer_34)
 
-        self.lbl_cfg_npcs_cd_value = QLabel(self.Config)
+        self.lbl_cfg_npcs_cd_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_npcs_cd_value.setObjectName(u"lbl_cfg_npcs_cd_value")
+        self.lbl_cfg_npcs_cd_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_28.addWidget(self.lbl_cfg_npcs_cd_value)
+        self.horizontalLayout_58.addWidget(self.lbl_cfg_npcs_cd_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_28)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_58)
 
-        self.horizontalLayout_29 = QHBoxLayout()
-        self.horizontalLayout_29.setObjectName(u"horizontalLayout_29")
-        self.lbl_cfg_pkmn_npcs = QLabel(self.Config)
+        self.horizontalLayout_59 = QHBoxLayout()
+        self.horizontalLayout_59.setObjectName(u"horizontalLayout_59")
+        self.lbl_cfg_pkmn_npcs = QLabel(self.gbox_config_preview)
         self.lbl_cfg_pkmn_npcs.setObjectName(u"lbl_cfg_pkmn_npcs")
 
-        self.horizontalLayout_29.addWidget(self.lbl_cfg_pkmn_npcs)
+        self.horizontalLayout_59.addWidget(self.lbl_cfg_pkmn_npcs)
 
-        self.horizontalSpacer_12 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_35 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_29.addItem(self.horizontalSpacer_12)
+        self.horizontalLayout_59.addItem(self.horizontalSpacer_35)
 
-        self.lbl_cfg_pkmn_npcs_countdown_value = QLabel(self.Config)
+        self.lbl_cfg_pkmn_npcs_countdown_value = QLabel(self.gbox_config_preview)
         self.lbl_cfg_pkmn_npcs_countdown_value.setObjectName(u"lbl_cfg_pkmn_npcs_countdown_value")
+        self.lbl_cfg_pkmn_npcs_countdown_value.setMinimumSize(QSize(0, 25))
 
-        self.horizontalLayout_29.addWidget(self.lbl_cfg_pkmn_npcs_countdown_value)
+        self.horizontalLayout_59.addWidget(self.lbl_cfg_pkmn_npcs_countdown_value)
 
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_29)
+        self.verticalLayout_21.addLayout(self.horizontalLayout_59)
 
-        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_8 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.verticalLayout_12.addItem(self.verticalSpacer_5)
+        self.verticalLayout_21.addItem(self.verticalSpacer_8)
+
+
+        self.verticalLayout_12.addWidget(self.gbox_config_preview)
 
 
         self.horizontalLayout_8.addLayout(self.verticalLayout_12)
@@ -1153,6 +1201,13 @@ class Ui_menu_view(object):
         self.btn_create_config.setFlat(True)
 
         self.verticalLayout_13.addWidget(self.btn_create_config)
+
+        self.line_4 = QFrame(self.Config)
+        self.line_4.setObjectName(u"line_4")
+        self.line_4.setFrameShape(QFrame.Shape.HLine)
+        self.line_4.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.verticalLayout_13.addWidget(self.line_4)
 
         self.btn_save_config = QPushButton(self.Config)
         self.btn_save_config.setObjectName(u"btn_save_config")
@@ -1188,6 +1243,327 @@ class Ui_menu_view(object):
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.Config), u"Config")
         self.Preferences = QWidget()
         self.Preferences.setObjectName(u"Preferences")
+        self.verticalLayout_2 = QVBoxLayout(self.Preferences)
+        self.verticalLayout_2.setSpacing(6)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.lbl_preferences_title = QLabel(self.Preferences)
+        self.lbl_preferences_title.setObjectName(u"lbl_preferences_title")
+        sizePolicy2.setHeightForWidth(self.lbl_preferences_title.sizePolicy().hasHeightForWidth())
+        self.lbl_preferences_title.setSizePolicy(sizePolicy2)
+        self.lbl_preferences_title.setProperty(u"title", True)
+
+        self.verticalLayout_2.addWidget(self.lbl_preferences_title)
+
+        self.gbox_config_preview_2 = QGroupBox(self.Preferences)
+        self.gbox_config_preview_2.setObjectName(u"gbox_config_preview_2")
+        sizePolicy2.setHeightForWidth(self.gbox_config_preview_2.sizePolicy().hasHeightForWidth())
+        self.gbox_config_preview_2.setSizePolicy(sizePolicy2)
+        self.horizontalLayout_17 = QHBoxLayout(self.gbox_config_preview_2)
+        self.horizontalLayout_17.setSpacing(1)
+        self.horizontalLayout_17.setObjectName(u"horizontalLayout_17")
+        self.horizontalLayout_17.setContentsMargins(10, 10, 10, 10)
+        self.verticalLayout_8 = QVBoxLayout()
+        self.verticalLayout_8.setSpacing(1)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.lbl_theme = QLabel(self.gbox_config_preview_2)
+        self.lbl_theme.setObjectName(u"lbl_theme")
+        sizePolicy2.setHeightForWidth(self.lbl_theme.sizePolicy().hasHeightForWidth())
+        self.lbl_theme.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_theme)
+
+        self.lbl_language = QLabel(self.gbox_config_preview_2)
+        self.lbl_language.setObjectName(u"lbl_language")
+        sizePolicy2.setHeightForWidth(self.lbl_language.sizePolicy().hasHeightForWidth())
+        self.lbl_language.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_language)
+
+        self.lbl_log_level = QLabel(self.gbox_config_preview_2)
+        self.lbl_log_level.setObjectName(u"lbl_log_level")
+        sizePolicy2.setHeightForWidth(self.lbl_log_level.sizePolicy().hasHeightForWidth())
+        self.lbl_log_level.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_log_level)
+
+        self.lbl_countdown_advances = QLabel(self.gbox_config_preview_2)
+        self.lbl_countdown_advances.setObjectName(u"lbl_countdown_advances")
+        sizePolicy2.setHeightForWidth(self.lbl_countdown_advances.sizePolicy().hasHeightForWidth())
+        self.lbl_countdown_advances.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_countdown_advances)
+
+        self.lbl_roi_color = QLabel(self.gbox_config_preview_2)
+        self.lbl_roi_color.setObjectName(u"lbl_roi_color")
+        sizePolicy2.setHeightForWidth(self.lbl_roi_color.sizePolicy().hasHeightForWidth())
+        self.lbl_roi_color.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_roi_color)
+
+        self.lbl_img_match_color = QLabel(self.gbox_config_preview_2)
+        self.lbl_img_match_color.setObjectName(u"lbl_img_match_color")
+        sizePolicy2.setHeightForWidth(self.lbl_img_match_color.sizePolicy().hasHeightForWidth())
+        self.lbl_img_match_color.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_img_match_color)
+
+        self.lbl_calibrated_tick = QLabel(self.gbox_config_preview_2)
+        self.lbl_calibrated_tick.setObjectName(u"lbl_calibrated_tick")
+        sizePolicy2.setHeightForWidth(self.lbl_calibrated_tick.sizePolicy().hasHeightForWidth())
+        self.lbl_calibrated_tick.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_8.addWidget(self.lbl_calibrated_tick)
+
+
+        self.horizontalLayout_17.addLayout(self.verticalLayout_8)
+
+        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_17.addItem(self.horizontalSpacer_6)
+
+        self.verticalLayout_22 = QVBoxLayout()
+        self.verticalLayout_22.setSpacing(1)
+        self.verticalLayout_22.setObjectName(u"verticalLayout_22")
+        self.cmb_theme = QComboBox(self.gbox_config_preview_2)
+        self.cmb_theme.addItem("")
+        self.cmb_theme.setObjectName(u"cmb_theme")
+        self.cmb_theme.setEnabled(False)
+        sizePolicy6.setHeightForWidth(self.cmb_theme.sizePolicy().hasHeightForWidth())
+        self.cmb_theme.setSizePolicy(sizePolicy6)
+        self.cmb_theme.setMinimumSize(QSize(150, 25))
+        self.cmb_theme.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_theme.setFrame(False)
+
+        self.verticalLayout_22.addWidget(self.cmb_theme)
+
+        self.cmb_language = QComboBox(self.gbox_config_preview_2)
+        self.cmb_language.addItem("")
+        self.cmb_language.setObjectName(u"cmb_language")
+        self.cmb_language.setEnabled(False)
+        sizePolicy6.setHeightForWidth(self.cmb_language.sizePolicy().hasHeightForWidth())
+        self.cmb_language.setSizePolicy(sizePolicy6)
+        self.cmb_language.setMinimumSize(QSize(150, 25))
+        self.cmb_language.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_language.setFrame(False)
+
+        self.verticalLayout_22.addWidget(self.cmb_language)
+
+        self.cmb_log_level = QComboBox(self.gbox_config_preview_2)
+        self.cmb_log_level.addItem("")
+        self.cmb_log_level.addItem("")
+        self.cmb_log_level.addItem("")
+        self.cmb_log_level.addItem("")
+        self.cmb_log_level.setObjectName(u"cmb_log_level")
+        self.cmb_log_level.setEnabled(True)
+        sizePolicy6.setHeightForWidth(self.cmb_log_level.sizePolicy().hasHeightForWidth())
+        self.cmb_log_level.setSizePolicy(sizePolicy6)
+        self.cmb_log_level.setMinimumSize(QSize(150, 25))
+        self.cmb_log_level.setCurrentText(u"DEBUG")
+        self.cmb_log_level.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_log_level.setFrame(False)
+
+        self.verticalLayout_22.addWidget(self.cmb_log_level)
+
+        self.spin_countdown_advances = QSpinBox(self.gbox_config_preview_2)
+        self.spin_countdown_advances.setObjectName(u"spin_countdown_advances")
+        sizePolicy6.setHeightForWidth(self.spin_countdown_advances.sizePolicy().hasHeightForWidth())
+        self.spin_countdown_advances.setSizePolicy(sizePolicy6)
+        self.spin_countdown_advances.setMinimumSize(QSize(150, 25))
+        self.spin_countdown_advances.setFrame(False)
+        self.spin_countdown_advances.setAlignment(Qt.AlignCenter)
+        self.spin_countdown_advances.setReadOnly(False)
+        self.spin_countdown_advances.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
+        self.spin_countdown_advances.setSpecialValueText(u"")
+        self.spin_countdown_advances.setKeyboardTracking(False)
+        self.spin_countdown_advances.setMinimum(1)
+        self.spin_countdown_advances.setMaximum(30)
+        self.spin_countdown_advances.setValue(10)
+
+        self.verticalLayout_22.addWidget(self.spin_countdown_advances)
+
+        self.frame_roi_color = QFrame(self.gbox_config_preview_2)
+        self.frame_roi_color.setObjectName(u"frame_roi_color")
+        sizePolicy6.setHeightForWidth(self.frame_roi_color.sizePolicy().hasHeightForWidth())
+        self.frame_roi_color.setSizePolicy(sizePolicy6)
+        self.frame_roi_color.setMinimumSize(QSize(150, 25))
+        self.frame_roi_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.frame_roi_color.setAutoFillBackground(False)
+        self.frame_roi_color.setStyleSheet(u"")
+        self.frame_roi_color.setFrameShape(QFrame.StyledPanel)
+        self.frame_roi_color.setFrameShadow(QFrame.Raised)
+
+        self.verticalLayout_22.addWidget(self.frame_roi_color)
+
+        self.frame_img_match_color = QFrame(self.gbox_config_preview_2)
+        self.frame_img_match_color.setObjectName(u"frame_img_match_color")
+        sizePolicy6.setHeightForWidth(self.frame_img_match_color.sizePolicy().hasHeightForWidth())
+        self.frame_img_match_color.setSizePolicy(sizePolicy6)
+        self.frame_img_match_color.setMinimumSize(QSize(150, 25))
+        self.frame_img_match_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.frame_img_match_color.setFrameShape(QFrame.StyledPanel)
+        self.frame_img_match_color.setFrameShadow(QFrame.Raised)
+
+        self.verticalLayout_22.addWidget(self.frame_img_match_color)
+
+        self.horizontalLayout_25 = QHBoxLayout()
+        self.horizontalLayout_25.setSpacing(0)
+        self.horizontalLayout_25.setObjectName(u"horizontalLayout_25")
+        self.horizontalLayout_25.setSizeConstraint(QLayout.SetDefaultConstraint)
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_25.addItem(self.horizontalSpacer_3)
+
+        self.chkb_calibrated_tick = QCheckBox(self.gbox_config_preview_2)
+        self.chkb_calibrated_tick.setObjectName(u"chkb_calibrated_tick")
+        sizePolicy1.setHeightForWidth(self.chkb_calibrated_tick.sizePolicy().hasHeightForWidth())
+        self.chkb_calibrated_tick.setSizePolicy(sizePolicy1)
+        self.chkb_calibrated_tick.setMinimumSize(QSize(0, 25))
+        self.chkb_calibrated_tick.setMaximumSize(QSize(10, 16777215))
+        self.chkb_calibrated_tick.setLayoutDirection(Qt.RightToLeft)
+        self.chkb_calibrated_tick.setAutoFillBackground(False)
+        self.chkb_calibrated_tick.setChecked(True)
+        self.chkb_calibrated_tick.setTristate(False)
+
+        self.horizontalLayout_25.addWidget(self.chkb_calibrated_tick)
+
+
+        self.verticalLayout_22.addLayout(self.horizontalLayout_25)
+
+
+        self.horizontalLayout_17.addLayout(self.verticalLayout_22)
+
+
+        self.verticalLayout_2.addWidget(self.gbox_config_preview_2)
+
+        self.gbox_config_preview_advance = QGroupBox(self.Preferences)
+        self.gbox_config_preview_advance.setObjectName(u"gbox_config_preview_advance")
+        sizePolicy2.setHeightForWidth(self.gbox_config_preview_advance.sizePolicy().hasHeightForWidth())
+        self.gbox_config_preview_advance.setSizePolicy(sizePolicy2)
+        self.horizontalLayout_23 = QHBoxLayout(self.gbox_config_preview_advance)
+        self.horizontalLayout_23.setSpacing(1)
+        self.horizontalLayout_23.setObjectName(u"horizontalLayout_23")
+        self.horizontalLayout_23.setContentsMargins(10, 10, 10, 10)
+        self.verticalLayout_24 = QVBoxLayout()
+        self.verticalLayout_24.setSpacing(1)
+        self.verticalLayout_24.setObjectName(u"verticalLayout_24")
+        self.lbl_opencv_backend = QLabel(self.gbox_config_preview_advance)
+        self.lbl_opencv_backend.setObjectName(u"lbl_opencv_backend")
+        sizePolicy2.setHeightForWidth(self.lbl_opencv_backend.sizePolicy().hasHeightForWidth())
+        self.lbl_opencv_backend.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_24.addWidget(self.lbl_opencv_backend)
+
+        self.lbl_codec = QLabel(self.gbox_config_preview_advance)
+        self.lbl_codec.setObjectName(u"lbl_codec")
+        sizePolicy2.setHeightForWidth(self.lbl_codec.sizePolicy().hasHeightForWidth())
+        self.lbl_codec.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_24.addWidget(self.lbl_codec)
+
+        self.lbl_resolution = QLabel(self.gbox_config_preview_advance)
+        self.lbl_resolution.setObjectName(u"lbl_resolution")
+        sizePolicy2.setHeightForWidth(self.lbl_resolution.sizePolicy().hasHeightForWidth())
+        self.lbl_resolution.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_24.addWidget(self.lbl_resolution)
+
+        self.lbl_fps = QLabel(self.gbox_config_preview_advance)
+        self.lbl_fps.setObjectName(u"lbl_fps")
+        sizePolicy2.setHeightForWidth(self.lbl_fps.sizePolicy().hasHeightForWidth())
+        self.lbl_fps.setSizePolicy(sizePolicy2)
+
+        self.verticalLayout_24.addWidget(self.lbl_fps)
+
+
+        self.horizontalLayout_23.addLayout(self.verticalLayout_24)
+
+        self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_23.addItem(self.horizontalSpacer_7)
+
+        self.verticalLayout_23 = QVBoxLayout()
+        self.verticalLayout_23.setSpacing(1)
+        self.verticalLayout_23.setObjectName(u"verticalLayout_23")
+        self.cmb_resolutions = QComboBox(self.gbox_config_preview_advance)
+        self.cmb_resolutions.setObjectName(u"cmb_resolutions")
+        self.cmb_resolutions.setEnabled(True)
+        sizePolicy3.setHeightForWidth(self.cmb_resolutions.sizePolicy().hasHeightForWidth())
+        self.cmb_resolutions.setSizePolicy(sizePolicy3)
+        self.cmb_resolutions.setMinimumSize(QSize(150, 25))
+        self.cmb_resolutions.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_resolutions.setFrame(False)
+
+        self.verticalLayout_23.addWidget(self.cmb_resolutions)
+
+        self.cmb_cv_backend = QComboBox(self.gbox_config_preview_advance)
+        self.cmb_cv_backend.addItem("")
+        self.cmb_cv_backend.addItem("")
+        self.cmb_cv_backend.addItem("")
+        self.cmb_cv_backend.addItem("")
+        self.cmb_cv_backend.setObjectName(u"cmb_cv_backend")
+        self.cmb_cv_backend.setEnabled(True)
+        sizePolicy3.setHeightForWidth(self.cmb_cv_backend.sizePolicy().hasHeightForWidth())
+        self.cmb_cv_backend.setSizePolicy(sizePolicy3)
+        self.cmb_cv_backend.setMinimumSize(QSize(150, 25))
+        self.cmb_cv_backend.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_cv_backend.setFrame(False)
+
+        self.verticalLayout_23.addWidget(self.cmb_cv_backend)
+
+        self.cmb_cv_codec = QComboBox(self.gbox_config_preview_advance)
+        self.cmb_cv_codec.addItem("")
+        self.cmb_cv_codec.addItem("")
+        self.cmb_cv_codec.addItem("")
+        self.cmb_cv_codec.addItem("")
+        self.cmb_cv_codec.setObjectName(u"cmb_cv_codec")
+        self.cmb_cv_codec.setEnabled(True)
+        sizePolicy3.setHeightForWidth(self.cmb_cv_codec.sizePolicy().hasHeightForWidth())
+        self.cmb_cv_codec.setSizePolicy(sizePolicy3)
+        self.cmb_cv_codec.setMinimumSize(QSize(150, 25))
+        self.cmb_cv_codec.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cmb_cv_codec.setFrame(False)
+
+        self.verticalLayout_23.addWidget(self.cmb_cv_codec)
+
+        self.horizontalLayout_24 = QHBoxLayout()
+        self.horizontalLayout_24.setSpacing(0)
+        self.horizontalLayout_24.setObjectName(u"horizontalLayout_24")
+        self.slider_fps = QSlider(self.gbox_config_preview_advance)
+        self.slider_fps.setObjectName(u"slider_fps")
+        sizePolicy4.setHeightForWidth(self.slider_fps.sizePolicy().hasHeightForWidth())
+        self.slider_fps.setSizePolicy(sizePolicy4)
+        self.slider_fps.setMinimumSize(QSize(100, 25))
+        self.slider_fps.setMinimum(10)
+        self.slider_fps.setMaximum(120)
+        self.slider_fps.setSingleStep(1)
+        self.slider_fps.setValue(60)
+        self.slider_fps.setOrientation(Qt.Horizontal)
+
+        self.horizontalLayout_24.addWidget(self.slider_fps)
+
+        self.lbl_fps_value = QLabel(self.gbox_config_preview_advance)
+        self.lbl_fps_value.setObjectName(u"lbl_fps_value")
+        sizePolicy6.setHeightForWidth(self.lbl_fps_value.sizePolicy().hasHeightForWidth())
+        self.lbl_fps_value.setSizePolicy(sizePolicy6)
+        self.lbl_fps_value.setMinimumSize(QSize(0, 0))
+        self.lbl_fps_value.setAlignment(Qt.AlignCenter)
+
+        self.horizontalLayout_24.addWidget(self.lbl_fps_value)
+
+
+        self.verticalLayout_23.addLayout(self.horizontalLayout_24)
+
+
+        self.horizontalLayout_23.addLayout(self.verticalLayout_23)
+
+
+        self.verticalLayout_2.addWidget(self.gbox_config_preview_advance)
+
+        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_2.addItem(self.verticalSpacer_5)
+
         self.tab_widget.addTab(self.Preferences, "")
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.Preferences), u"Preferences")
         self.Debug = QWidget()
@@ -1377,12 +1753,15 @@ class Ui_menu_view(object):
         self.spin_pkmn_npcs_countdown.setPrefix("")
         self.lbl_reident_pkmn_npc.setText(QCoreApplication.translate("menu_view", u"Reidentify with NPC Pok\u00e9mon", None))
         self.chkb_reident_pkmn_npc.setText("")
+        self.lbl_eye_manager_title.setText(QCoreApplication.translate("menu_view", u"Eye Manager", None))
+        self.switch_preview_tracking.setText(QCoreApplication.translate("menu_view", u"PREVIEW TRACKING", None))
         self.btn_create_resource.setText(QCoreApplication.translate("menu_view", u"CREATE", None))
         self.btn_delete_resource.setText(QCoreApplication.translate("menu_view", u"DELETE", None))
-        self.switch_preview_tracking.setText(QCoreApplication.translate("menu_view", u"PREVIEW TRACKING", None))
+        self.gbox_seed_2.setTitle("")
         self.lbl_threshold.setText(QCoreApplication.translate("menu_view", u"Threshold", None))
         self.lbl_threshold_value.setText(QCoreApplication.translate("menu_view", u"0.8", None))
         self.lbl_config_title.setText(QCoreApplication.translate("menu_view", u"Configuration", None))
+        self.gbox_config_preview.setTitle("")
         self.lbl_cfg_roi.setText(QCoreApplication.translate("menu_view", u"Region of Interest Coords", None))
         self.lbl_cfg_roi_value.setText(QCoreApplication.translate("menu_view", u"[X, Y, W, H]", None))
         self.lbl_cfg_threshold.setText(QCoreApplication.translate("menu_view", u"Image Recognition Threshold", None))
@@ -1402,6 +1781,48 @@ class Ui_menu_view(object):
         self.btn_create_config.setText(QCoreApplication.translate("menu_view", u"CREATE", None))
         self.btn_save_config.setText(QCoreApplication.translate("menu_view", u"SAVE", None))
         self.btn_load_config.setText(QCoreApplication.translate("menu_view", u"LOAD", None))
+        self.lbl_preferences_title.setText(QCoreApplication.translate("menu_view", u"Preferences", None))
+        self.gbox_config_preview_2.setTitle("")
+        self.lbl_theme.setText(QCoreApplication.translate("menu_view", u"Theme", None))
+        self.lbl_language.setText(QCoreApplication.translate("menu_view", u"Language", None))
+        self.lbl_log_level.setText(QCoreApplication.translate("menu_view", u"Log level", None))
+        self.lbl_countdown_advances.setText(QCoreApplication.translate("menu_view", u"Countdown ticks", None))
+        self.lbl_roi_color.setText(QCoreApplication.translate("menu_view", u"ROI color", None))
+        self.lbl_img_match_color.setText(QCoreApplication.translate("menu_view", u"Image match color", None))
+        self.lbl_calibrated_tick.setText(QCoreApplication.translate("menu_view", u"Calibrated tick", None))
+        self.cmb_theme.setItemText(0, QCoreApplication.translate("menu_view", u"default_dark.ini", None))
+
+        self.cmb_theme.setCurrentText(QCoreApplication.translate("menu_view", u"default_dark.ini", None))
+        self.cmb_language.setItemText(0, QCoreApplication.translate("menu_view", u"English", None))
+
+        self.cmb_language.setCurrentText(QCoreApplication.translate("menu_view", u"English", None))
+        self.cmb_log_level.setItemText(0, QCoreApplication.translate("menu_view", u"DEBUG", None))
+        self.cmb_log_level.setItemText(1, QCoreApplication.translate("menu_view", u"INFO", None))
+        self.cmb_log_level.setItemText(2, QCoreApplication.translate("menu_view", u"WARNING", None))
+        self.cmb_log_level.setItemText(3, QCoreApplication.translate("menu_view", u"ERROR", None))
+
+        self.spin_countdown_advances.setSuffix("")
+        self.spin_countdown_advances.setPrefix("")
+        self.chkb_calibrated_tick.setText("")
+        self.gbox_config_preview_advance.setTitle("")
+        self.lbl_opencv_backend.setText(QCoreApplication.translate("menu_view", u"OpenCV Backend", None))
+        self.lbl_codec.setText(QCoreApplication.translate("menu_view", u"Video Codec", None))
+        self.lbl_resolution.setText(QCoreApplication.translate("menu_view", u"Resolution", None))
+        self.lbl_fps.setText(QCoreApplication.translate("menu_view", u"FPS Cap", None))
+        self.cmb_resolutions.setCurrentText("")
+        self.cmb_cv_backend.setItemText(0, QCoreApplication.translate("menu_view", u"AUTO", None))
+        self.cmb_cv_backend.setItemText(1, QCoreApplication.translate("menu_view", u"DSHOW", None))
+        self.cmb_cv_backend.setItemText(2, QCoreApplication.translate("menu_view", u"MSMF", None))
+        self.cmb_cv_backend.setItemText(3, QCoreApplication.translate("menu_view", u"V4L2", None))
+
+        self.cmb_cv_backend.setCurrentText(QCoreApplication.translate("menu_view", u"AUTO", None))
+        self.cmb_cv_codec.setItemText(0, QCoreApplication.translate("menu_view", u"AUTO", None))
+        self.cmb_cv_codec.setItemText(1, QCoreApplication.translate("menu_view", u"MJPG", None))
+        self.cmb_cv_codec.setItemText(2, QCoreApplication.translate("menu_view", u"YUY2", None))
+        self.cmb_cv_codec.setItemText(3, QCoreApplication.translate("menu_view", u"H264", None))
+
+        self.cmb_cv_codec.setCurrentText(QCoreApplication.translate("menu_view", u"AUTO", None))
+        self.lbl_fps_value.setText(QCoreApplication.translate("menu_view", u"60", None))
         self.btn_generate_blinks.setText(QCoreApplication.translate("menu_view", u"GENERATE BLINKS", None))
         self.btn_generate_blinks_munchlax.setText(QCoreApplication.translate("menu_view", u"GENERATE BLINKS FROM MUNCHLAX", None))
         self.label_2.setText(QCoreApplication.translate("menu_view", u"X to Advance", None))

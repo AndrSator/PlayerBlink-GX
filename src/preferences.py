@@ -5,7 +5,7 @@ from src.capture import backend
 from src.log import logger, LogLevel
 from src.constants import Constants as Const
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class Preferences:
@@ -93,8 +93,8 @@ class Preferences:
             except KeyError:
                 self._log_level = LogLevel.INFO.value
                 logger.warning(
-                    f"[Preferences] Setting log level to: {
-                        LogLevel(self._log_level).name}")
+                    f"[Preferences] Unknow log level {value}. "
+                    f"Setting log level to: {LogLevel(self._log_level).name}")
         else:
             raise ValueError(
                 f"log_level must be a string or integer value. {value!r}")
@@ -126,10 +126,11 @@ class Preferences:
             raise ValueError(
                 f"countdown_ticks must be a integer value. {value!r}")
 
-        if value > Const.DF_COUNTDOWN_DURATION_TICKS:
-            value = Const.DF_COUNTDOWN_DURATION_TICKS
+        max = Const.DF_COUNTDOWN_DURATION_TICKS_MAX
+        if value > max:
+            value = Const.DF_COUNTDOWN_DURATION_TICKS_MAX
             logger.warning(
-                f"[Preferences] countdown_ticks exceeds default max. "
+                f"[Preferences] countdown_ticks exceeds default max ({max}). "
                 f"Set to {value}")
 
         self._countdown_ticks = value
@@ -140,10 +141,11 @@ class Preferences:
 
     @roi_color.setter
     def roi_color(self, value):
-        if not Utils.is_valid_hex_color(value):
+        c = Utils.parse_hex_color(value)
+        if not c:
             raise ValueError(f"Invalid color: {value}")
 
-        self._roi_color = value
+        self._roi_color = c
 
     @property
     def img_match_color(self):
@@ -151,10 +153,11 @@ class Preferences:
 
     @img_match_color.setter
     def img_match_color(self, value):
-        if not Utils.is_valid_hex_color(value):
+        c = Utils.parse_hex_color(value)
+        if not c:
             raise ValueError(f"Invalid color: {value}")
 
-        self._img_match_color = value
+        self._img_match_color = c
 
     @property
     def video_capture_width(self):

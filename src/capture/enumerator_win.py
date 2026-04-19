@@ -36,7 +36,7 @@ class WindowsDeviceEnumerator(DeviceEnumerator):
             return devices
 
         index = 0
-        
+
         try:
             moniker, count = filter_enum.Next(1)
         except ValueError:

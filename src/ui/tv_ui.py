@@ -24,7 +24,7 @@ class Ui_tv_view(object):
     def setupUi(self, tv_view):
         if not tv_view.objectName():
             tv_view.setObjectName(u"tv_view")
-        tv_view.resize(306, 239)
+        tv_view.resize(470, 295)
         self.gridLayout = QGridLayout(tv_view)
         self.gridLayout.setObjectName(u"gridLayout")
         self.horizontalLayout = QHBoxLayout()
@@ -175,6 +175,16 @@ class Ui_tv_view(object):
 
         self.verticalLayout_7.addWidget(self.switch_crop_eye)
 
+        self.switch_roi_visibility = QPushButton(tv_view)
+        self.switch_roi_visibility.setObjectName(u"switch_roi_visibility")
+        sizePolicy4.setHeightForWidth(self.switch_roi_visibility.sizePolicy().hasHeightForWidth())
+        self.switch_roi_visibility.setSizePolicy(sizePolicy4)
+        self.switch_roi_visibility.setMinimumSize(QSize(32, 32))
+        self.switch_roi_visibility.setMaximumSize(QSize(32, 32))
+        self.switch_roi_visibility.setFlat(True)
+
+        self.verticalLayout_7.addWidget(self.switch_roi_visibility)
+
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_7.addItem(self.verticalSpacer)
@@ -209,6 +219,7 @@ class Ui_tv_view(object):
         self.btn_adjust_screen.setText(QCoreApplication.translate("tv_view", u"ADJUST", None))
         self.switch_crop_tracking_area.setText(QCoreApplication.translate("tv_view", u"ROI", None))
         self.switch_crop_eye.setText(QCoreApplication.translate("tv_view", u"CROP", None))
+        self.switch_roi_visibility.setText(QCoreApplication.translate("tv_view", u"HIDE", None))
         self.switch_monitor_mode.setText(QCoreApplication.translate("tv_view", u"MODE", None))
     # retranslateUi
 

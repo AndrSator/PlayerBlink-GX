@@ -170,6 +170,12 @@ def set_switch_icon(widget, btn_name, icons_dict, icons_path,
         _apply_icon(btn, svg_path, icon_info, default_size)
 
 
+def set_active(btn, active):
+    btn.setProperty("active", active)
+    btn.style().unpolish(btn)
+    btn.style().polish(btn)
+
+
 def refresh_icon(widget, btn_name, icons_dict, icons_path, default_size=16):
     """ Refresh a non-list icon (re-reads palette colors) """
     icon_info = icons_dict.get(btn_name)
