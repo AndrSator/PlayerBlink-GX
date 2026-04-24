@@ -10,6 +10,20 @@ from src.log import logger
 class Calc:
     """Module for calculating Xorshift state based on observed information"""
 
+    @staticmethod
+    def pkmn_blink_interval(rng_value: int) -> float:
+        """Seconds until the next Pokémon NPC blink given a raw Xorshift.
+
+        Mirrors the game's `rangefloat(3, 12) + 0.285` derivation used by
+        non-munchlax overworld Pokémon NPCs: once the state is known, every
+        future blink interval is a pure function of the RNG output consumed
+        by that blink event.
+        """
+        t = (rng_value & Const.MAX_23BIT_INT) / Const.MAX_23BIT_INT
+        return (t * Const.PKMN_BLINK_INTERVAL_MIN
+                + (1 - t) * Const.PKMN_BLINK_INTERVAL_MAX
+                + Const.PKMN_BLINK_INTERVAL_OFFSET)
+
     def get_zero(self, size=32):
         """Get a matrix of the size provided filled with zeros"""
         return np.zeros((size, size), dtype="uint8")
@@ -156,7 +170,7 @@ class Calc:
                 f"Insufficient bits for munchlax solve: got {total_bits}, "
                 f"need >= 128. Consumed {len(used_intervals)} intervals, "
                 f"{len(intervals)} left unused. Increase "
-                f"BLINKS_REQUIRED_TRACKING_TIDSID.")
+                f"BLINKS_REQUIRED_TRACKING_TIDSID")
 
         ref_mat = np.vstack(rows_list)
         return ref_mat, used_intervals
@@ -204,7 +218,7 @@ class Calc:
                 f"columns {missing_pivots[:8]}"
                 f"{'...' if len(missing_pivots) > 8 else ''} "
                 f"(matrix is rank {pivot}, need {width}). "
-                f"Try increasing BLINKS_REQUIRED_TRACKING.")
+                f"Try increasing BLINKS_REQUIRED_TRACKING")
 
         for i in range(width):
             check = 1 << (width-i-1)

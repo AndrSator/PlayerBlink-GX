@@ -11,6 +11,7 @@ QWidget {
 
 QFrame[isLine="true"] {
     margin: 4px 0;
+    background-color: transparent;
 }
 
 QLabel {
@@ -31,11 +32,17 @@ QPushButton, QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox {
     selection-background-color: transparent;  
 }
 
+QGroupBox[class="lower"] {
+    background-color: {backgroundVariant};
+    border-radius: 4px;
+    border: none;
+}
+
+/*
 QGroupBox QPushButton {
     background-color: {surfaceLight};
 }
 
-/*
 QPushButton[menuIcon="true"] {
     background-color: red;
     color: blue;
@@ -79,7 +86,6 @@ QPushButton:disabled, QComboBox:disabled {
 
 QPushButton[class="seedValue"] {
     color: {text};
-    background-color: {surface};
     font-family: "Space Mono";
     font-size: 11pt;
     text-align: center;
@@ -151,8 +157,11 @@ QScrollBar::sub-page:vertical {
 }
 
 QGroupBox, _FlowContainer {
+    /*
     background-color: {surface};
     border-radius: 4px;
+    */
+    border: none;
 }
 
 LinearProgress, CircularProgress {

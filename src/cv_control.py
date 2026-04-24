@@ -446,6 +446,54 @@ class CvControl(QObject):
         self.stop_capture()
         self._current_window = window
 
+    def reconfigure(self):
+        """Restart the active capture so runtime-tunable prefs (backend,
+        resolution, codec, fps) are re-applied from Preferences on the
+        next VideoCapture open. Passes through LOADING so the UI shows
+        the loading state/shader.
+
+        Returns True if a restart was performed, False if there was
+        nothing to restart (idle or monitor mode).
+        """
+        if self._monitor_mode:
+            return False
+
+        was_active = (self.is_capturing() or self.is_paused()
+                      or self.in_error())
+        if not was_active:
+            return False
+
+        logger.info("[CvControl] Reconfigure: stop + start capture")
+        self.stop_capture()
+        self.start_capture()
+        return True
+
+    def set_fps(self, fps):
+        """Best-effort live FPS change on the active cv2.VideoCapture.
+
+        Returns:
+            None: not applicable (no active capture, or in monitor mode).
+            True: driver accepted the new FPS (actual ≈ requested).
+            False: driver ignored the request — caller may restart capture.
+        """
+        with self._lock:
+            cap = self._capture
+            if cap is None or self._monitor_mode:
+                return None
+
+        try:
+            cap.set(cv2.CAP_PROP_FPS, float(fps))
+            actual = cap.get(cv2.CAP_PROP_FPS)
+        except Exception as e:
+            logger.warning(f"[CvControl] set_fps({fps}) failed: {e}")
+            return False
+
+        honored = abs(actual - float(fps)) < 1.0
+        logger.info(
+            f"[CvControl] set_fps({fps}) -> actual={actual:.1f} "
+            f"{'OK' if honored else 'IGNORED'}")
+        return honored
+
     def set_window_by_title(self, title):
         for w in self.windows:
             if w.title == title:

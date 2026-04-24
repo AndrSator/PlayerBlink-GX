@@ -8,11 +8,14 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, \
 from ..constants import Constants as Const
 
 
-_BLINK_ICON_MAP = [
-    "",                       # IDLE
-    "visibility.svg",         # SINGLE
-    "visibility_filled.svg",  # DOUBLE
+_APPEND_ICON_MAP = [
+    "",                       # 0: IDLE / none
+    "visibility.svg",         # 1: SINGLE blink (matches BlinkType.SINGLE)
+    "visibility_filled.svg",  # 2: DOUBLE blink (matches BlinkType.DOUBLE)
+    "warning.svg",            # 3: Pokémon-NPC skip warning
 ]
+
+APPEND_ICON_PKMN_SKIP = 3
 
 _TIMER_ICON_MAP = [
     "timer.svg",
@@ -118,9 +121,13 @@ class AdvanceLabel(QWidget):
         self._prepend_icon_label.clear()
 
     def append_icon(self, icon):
-        # Append icons only support blink types
-        if icon is not None and icon != 0:
-            path = str(Const.ICONS_DIR / _BLINK_ICON_MAP[icon])
+        # Supported values:
+        #   None / 0  → no icon (cleared)
+        #   1, 2      → blink icons (matches BlinkType.SINGLE/DOUBLE)
+        #   3         → Pokémon-NPC skip warning
+        if (icon is not None and 0 < icon < len(_APPEND_ICON_MAP)
+                and _APPEND_ICON_MAP[icon]):
+            path = str(Const.ICONS_DIR / _APPEND_ICON_MAP[icon])
             pixmap = QIcon(path).pixmap(
                 QSize(self._append_icon_size, self._append_icon_size))
             self._append_icon_label.setPixmap(pixmap)

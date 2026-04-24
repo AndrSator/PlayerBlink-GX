@@ -5,7 +5,7 @@ from pathlib import Path
 class Constants:
     """ Application-wide constants and default values """
 
-    DEBUG_MODE = True
+    DEBUG_MODE = False
 
     # Platform detection (resolved once at import time)
     PLATFORM_WINDOWS = sys.platform == "win32"
@@ -35,7 +35,7 @@ class Constants:
     DF_GPU_RENDERING = True  # True = GPU scales via OpenGL, False = CPU scales
 
     # Tracking
-    BLINKS_REQUIRED_TRACKING = 36
+    BLINKS_REQUIRED_TRACKING = 40
     BLINKS_REQUIRED_REIDENTIFY = 7
     BLINKS_REQUIRED_REIDENTIFY_NOISY = 20
     # With the 3-bit fallback in reverse_states_by_munchlax, "unsafe"
@@ -91,6 +91,7 @@ class Constants:
     SHADERS_DIR = RESOURCE_DIR / "shaders"
     EYES_DIR = IMAGES_DIR / "eyes"
     CONFIGS_DIR = BASE_DIR / "configs"
+    LOGS_DIR = BASE_DIR / "logs"
 
     # Files
     JSON_PREFERENCES_FILE = PREFERENCES_DIR / "preferences.json"

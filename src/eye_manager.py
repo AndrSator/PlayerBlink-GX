@@ -1,5 +1,6 @@
 import os
 
+import cv2
 from PIL import Image
 
 from PySide6.QtCore import QObject, Signal
@@ -72,6 +73,16 @@ class EyeManager(QObject):
                 os.remove(self._selected_resource.path)
         except Exception as e:
             logger.error(f"Error deleting {self._selected_resource}: {e}")
+
+    def save_selected_from_array(self, image_array) -> bool:
+        """ Overwrite the selected resource file with the given image array """
+        resource = self._selected_resource
+        if resource is None:
+            return False
+
+        cv2.imwrite(str(resource.path), image_array)
+        logger.info(f"[EyeManager] Overwritten eye crop: {resource.path}")
+        return True
 
     def load_selected_pattern(self):
         """ Return the raw image bytes of the selected resource, or None """

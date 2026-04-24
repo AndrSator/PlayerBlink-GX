@@ -1,8 +1,10 @@
 from enum import Enum
+from pathlib import Path
 
-from PySide6.QtWidgets import QSizePolicy, QGraphicsScene
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent
-from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QSizePolicy, QGraphicsScene, QColorDialog
+from PySide6.QtCore import (Qt, QPropertyAnimation, QEasingCurve, QTimer,
+                            QEvent, Signal)
+from PySide6.QtGui import QPixmap, QColor
 
 from ..utils import Utils
 from ..log import LogLevel
@@ -10,7 +12,7 @@ from ..eye_tracker import BlinkType
 from ..constants import Constants as Const
 from ..preferences import Preferences
 
-from ..widgets.cadvance_label import AdvanceLabel
+from ..widgets.cadvance_label import AdvanceLabel, APPEND_ICON_PKMN_SKIP
 from ..widgets.cprogress import LinearProgress, CircularProgress
 from ..widgets.cgallery import GalleryContainer
 
@@ -107,6 +109,9 @@ class TimelineEntry(Enum):
 
 
 class Menu(CWindow):
+    roi_color_picked = Signal(str)
+    img_match_color_picked = Signal(str)
+
     def __init__(self):
         super().__init__()
         self._menu_ui = Ui_menu_view()
@@ -391,12 +396,12 @@ class Menu(CWindow):
         return self._menu_ui.spin_npcs
 
     @property
-    def spin_npcs_countdown(self):
-        return self._menu_ui.spin_npcs_countdown
+    def spin_npcs_timeline(self):
+        return self._menu_ui.spin_npcs_timeline
 
     @property
-    def spin_pkmn_npcs_countdown(self):
-        return self._menu_ui.spin_pkmn_npcs_countdown
+    def spin_pkmn_npcs_timeline(self):
+        return self._menu_ui.spin_pkmn_npcs_timeline
 
     # Eye Manager
     @property
@@ -466,11 +471,11 @@ class Menu(CWindow):
 
     @property
     def lbl_cfg_npcs_cd_value(self):
-        return self._menu_ui.lbl_cfg_npcs_cd_value
+        return self._menu_ui.lbl_cfg_npcs_timeline_value
 
     @property
-    def lbl_cfg_pkmn_npcs_countdown_value(self):
-        return self._menu_ui.lbl_cfg_pkmn_npcs_countdown_value
+    def lbl_cfg_pkmn_npcs_timeline_countdown_value(self):
+        return self._menu_ui.lbl_cfg_pkmn_npcs_timeline_value
 
     @property
     def btn_create_config(self):
@@ -584,32 +589,45 @@ class Menu(CWindow):
             str(cfg.timeline_buffer))
         self.lbl_cfg_npcs_value.setText(str(cfg.npc))
         self.lbl_cfg_npcs_cd_value.setText(str(cfg.timeline_npc))
-        self.lbl_cfg_pkmn_npcs_countdown_value.setText(
+        self.lbl_cfg_pkmn_npcs_timeline_countdown_value.setText(
             str(cfg.pkmn_npc))
 
     def display_preferences(self):
         prefs = Preferences()
-        # self.cmb_language = prefs.language # TODO
-        self.cmb_log_level.setCurrentText(LogLevel(prefs.log_level).name)
-        self.chkb_calibrated_tick.setChecked(prefs.calibrated_tick)
-        self._set_roi_color_frame(prefs.roi_color)
-        self._set_img_match_color_frame(prefs.img_match_color)
-        self.spin_countdown_advances.setValue(prefs.countdown_ticks)
-        # self.frame_roi_color = prefs.roi_color
-        # self.frame_img_match_color = prefs.img_match_color
 
-        width = prefs.video_capture_width
-        height = prefs.video_capture_height
-        target = (width, height)
+        widgets = [
+            self.cmb_theme, self.cmb_log_level, self.chkb_calibrated_tick,
+            self.spin_countdown_advances, self.cmb_cv_backend,
+            self.cmb_cv_codec, self.cmb_resolutions, self.slider_fps,
+        ]
+        for w in widgets:
+            w.blockSignals(True)
 
-        for i in range(self.cmb_resolutions.count()):
-            if self.cmb_resolutions.itemData(i) == target:
-                self.cmb_resolutions.setCurrentIndex(i)
-                break
+        try:
+            theme_name = Path(str(prefs.theme)).name
+            self.cmb_theme.setCurrentText(theme_name)
 
-        self.cmb_cv_backend.setCurrentText(prefs.capture_backend)
-        self.cmb_resolutions = prefs.video_capture_width, \
-            prefs.video_capture_height
+            # self.cmb_language = prefs.language # TODO (translations pending)
+            self.cmb_log_level.setCurrentText(LogLevel(prefs.log_level).name)
+            self.chkb_calibrated_tick.setChecked(prefs.calibrated_tick)
+            self._set_roi_color_frame(prefs.roi_color)
+            self._set_img_match_color_frame(prefs.img_match_color)
+            self.spin_countdown_advances.setValue(prefs.countdown_ticks)
+
+            target = (prefs.video_capture_width, prefs.video_capture_height)
+            for i in range(self.cmb_resolutions.count()):
+                if self.cmb_resolutions.itemData(i) == target:
+                    self.cmb_resolutions.setCurrentIndex(i)
+                    break
+
+            self.cmb_cv_backend.setCurrentText(prefs.capture_backend)
+            self.cmb_cv_codec.setCurrentText(prefs.capture_codec)
+
+            self.slider_fps.setValue(int(prefs.capture_fps))
+            self.lbl_fps_value.setText(str(int(prefs.capture_fps)))
+        finally:
+            for w in widgets:
+                w.blockSignals(False)
 
     def _set_roi_color_frame(self, value):
         c = Utils.parse_hex_color(value)
@@ -659,6 +677,34 @@ class Menu(CWindow):
 
         return super().eventFilter(obj, event)
 
+    def open_roi_color_picker(self):
+        """Open a color picker for the ROI color and emit
+        `roi_color_picked(hex)` if the user accepts. Wire this to whichever
+        widget replaces `frame_roi_color`."""
+        self._open_color_picker(
+            Preferences().roi_color, self.roi_color_picked,
+            self._set_roi_color_frame)
+
+    def open_img_match_color_picker(self):
+        """Open a color picker for the image-match color and emit
+        `img_match_color_picked(hex)` if the user accepts. Wire this to
+        whichever widget replaces `frame_img_match_color`."""
+        self._open_color_picker(
+            Preferences().img_match_color, self.img_match_color_picked,
+            self._set_img_match_color_frame)
+
+    def _open_color_picker(self, initial_hex, signal, frame_setter):
+        initial = Utils.parse_hex_color(initial_hex) or QColor(Qt.white)
+        color = QColorDialog.getColor(
+            initial, self, "Select color",
+            QColorDialog.ColorDialogOption.ShowAlphaChannel)
+        if not color.isValid():
+            return
+
+        hex_str = color.name(QColor.NameFormat.HexArgb)
+        frame_setter(hex_str)
+        signal.emit(hex_str)
+
     def toggle_seed_display(self):
         self._seed_display_mode = not self._seed_display_mode
         self.set_seed_display_mode()
@@ -691,6 +737,10 @@ class Menu(CWindow):
     def _populate_comboboxes(self):
         for text, (w, h) in _RESOLUTIONS.items():
             self.cmb_resolutions.addItem(text, (w, h))
+
+        self.cmb_theme.clear()
+        for theme_file in sorted(Const.THEMES_DIR.glob("*.ini")):
+            self.cmb_theme.addItem(theme_file.name)
 
     def _set_switch_icon(self, btn_name, icon_index):
         set_switch_icon(self, btn_name, _ICONS, Const.ICONS_DIR,
@@ -772,7 +822,8 @@ class Menu(CWindow):
         label.hide()
         self._label_pool.append(label)
 
-    def _acquire_label(self, advance, state, blink_type, timer_icon):
+    def _acquire_label(self, advance, state, blink_type, timer_icon,
+                       is_pkmn_skip=False):
         if self._label_pool:
             lbl = self._label_pool.pop()
         else:
@@ -780,7 +831,13 @@ class Menu(CWindow):
 
         lbl.setText(str(advance))
         lbl.setProperty("timelineState", state.value)
-        lbl.append_icon(blink_type)
+        # Pokémon-NPC advances replace the blink icon with a warning so
+        # the user knows this advance will be "skipped" (the blink
+        # belongs to an NPC Pokémon, not the player).
+        if is_pkmn_skip:
+            lbl.append_icon(APPEND_ICON_PKMN_SKIP)
+        else:
+            lbl.append_icon(blink_type)
         lbl.prepend_icon(timer_icon)
 
         lbl.repolish()
@@ -814,16 +871,18 @@ class Menu(CWindow):
         self._add_timeline_entry(
             current_advance, current_value, TimelineEntry.CURRENT)
 
-        for adv, val, pred_blink in predictions:
+        for adv, _val, pred_blink, source in predictions:
             target = self.spin_advance_target.value()
             adv_type = TimelineEntry.PREDICTED if adv != target \
                 else TimelineEntry.TARGET
-            self._add_timeline_entry(adv, pred_blink, adv_type)
+            self._add_timeline_entry(
+                adv, pred_blink, adv_type, is_pkmn_skip=(source == 1))
 
         container.setUpdatesEnabled(True)
         self._scroll_to_current()
 
-    def push_advance(self, current_advance, _rng, predictions, blink_type):
+    def push_advance(self, current_advance, _rng, predictions, blink_type,
+                     is_pkmn_skip=False, show_pkmn_skip=True):
         layout = self.timeline_layout
         container = self._scroll_area.widget() or self._scroll_area
         container.setUpdatesEnabled(False)
@@ -861,13 +920,15 @@ class Menu(CWindow):
             self._recycle_label(w)
 
         self._add_timeline_entry(
-            current_advance, blink_type, TimelineEntry.CURRENT)
+            current_advance, blink_type, TimelineEntry.CURRENT,
+            is_pkmn_skip=is_pkmn_skip)
 
-        # Add predictions (each with its own blink type)
-        for adv, val, pred_blink in predictions:
-            # target = self.spin_advance_target.value()
+        # Add predictions (each with its own blink type and origin)
+        for adv, _val, pred_blink, source in predictions:
             adv_type = self._get_adv_type(adv)
-            self._add_timeline_entry(adv, pred_blink, adv_type)
+            self._add_timeline_entry(
+                adv, pred_blink, adv_type,
+                is_pkmn_skip=show_pkmn_skip and source == 1)
 
         container.setUpdatesEnabled(True)
         self._scroll_to_current(trimmed_height)
@@ -892,7 +953,8 @@ class Menu(CWindow):
 
         return TimelineEntry.PREDICTED
 
-    def _add_timeline_entry(self, advance, blink_type, state):
+    def _add_timeline_entry(self, advance, blink_type, state,
+                            is_pkmn_skip=False):
         # Eye icon
         blink_type_icon = blink_type.value if isinstance(
             blink_type, BlinkType) else None
@@ -913,7 +975,8 @@ class Menu(CWindow):
                 timer_icon = 0
 
         lbl = self._acquire_label(
-            advance, state, blink_type_icon, timer_icon)
+            advance, state, blink_type_icon, timer_icon,
+            is_pkmn_skip=is_pkmn_skip)
 
         self.timeline_layout.addWidget(lbl)
         lbl.show()

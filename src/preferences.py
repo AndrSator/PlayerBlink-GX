@@ -1,5 +1,7 @@
 import json
 
+from PySide6.QtGui import QColor
+
 from src.utils import Utils
 from src.capture import backend
 from src.log import logger, LogLevel
@@ -145,7 +147,7 @@ class Preferences:
         if not c:
             raise ValueError(f"Invalid color: {value}")
 
-        self._roi_color = c
+        self._roi_color = c.name(QColor.NameFormat.HexArgb)
 
     @property
     def img_match_color(self):
@@ -157,7 +159,7 @@ class Preferences:
         if not c:
             raise ValueError(f"Invalid color: {value}")
 
-        self._img_match_color = c
+        self._img_match_color = c.name(QColor.NameFormat.HexArgb)
 
     @property
     def video_capture_width(self):
@@ -308,12 +310,15 @@ class Preferences:
 
     def save(self):
         logger.info("Saving preferences to %s", self._filepath)
+        theme = self._theme.name if hasattr(self._theme, "name") \
+            else str(self._theme)
         data = {
-            "theme": self._theme,
+            "theme": theme,
             "language": self._language,
             "log_level": LogLevel(self._log_level).name,
             "smooth_scaling": self._smooth_scaling,
             "calibrated_tick": self._calibrated_tick,
+            "countdown_ticks": self._countdown_ticks,
             "roi_color": self._roi_color,
             "img_match_color": self._img_match_color,
             "advanced": {
